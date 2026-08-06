@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learning Pathway — B.Sc. Computer Science</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="shortcut icon" href="./favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -983,7 +985,26 @@ function optMatchesSearch(opt, categoryLabel){
   const hay = `${opt.name} ${opt.code} ${categoryLabel||""}`.toLowerCase();
   return hay.includes(electiveSearchTerm.toLowerCase());
 }
-function menuKeys(){ return ["all", ...Object.keys(getElectiveMenuData())]; }
+function getMenuPriority(key){
+  const priority = {
+    all: 0,
+    majormodules: 1,
+    majorelective: 2,
+    socbehav: 3,
+    ethics: 4,
+    natsci: 5,
+    humanities: 6,
+    civilization: 7,
+    bus_major: 8,
+    hs_major: 9,
+    generalelective: 10
+  };
+  return priority[key] ?? 99;
+}
+function menuKeys(){
+  const keys = Object.keys(getElectiveMenuData()).sort((a,b)=>getMenuPriority(a)-getMenuPriority(b));
+  return ["all", ...keys];
+}
 function menuLabel(key){
   if(key==="all") return "All";
   return getElectiveMenuData()[key].label;
