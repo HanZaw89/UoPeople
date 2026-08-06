@@ -745,13 +745,32 @@ function getNextUpOrder(){
   return null;
 }
 
-function getDuplicateElectiveOrders(){
-  const seen = {};
+function getChoiceSelectionKey(entry){
+  if(entry.type !== "choice") return null;
+  const menu = getElectiveMenuData()[entry.menu];
+  const currentIdx = STATE.choice[entry.o] ?? 0;
+  if(!menu || !Array.isArray(menu.options)) return null;
+  const opt = menu.options[currentIdx] || menu.options[0];
+  if(!opt) return null;
+  const code = (opt.code && opt.code !== "—") ? opt.code : "";
+  const name = opt.name || "";
+  return `${code}${code ? "::" : ""}${name}`;
+}
+
+function getDuplicateChoiceOrders(){
+  const seen = new Map();
   const dupes = new Set();
-  PATHWAY.filter(e=>e.menu==="majorelective").forEach(e=>{
-    const idx = STATE.choice[e.o] ?? 0;
-    if(seen[idx] !== undefined){ dupes.add(e.o); dupes.add(seen[idx]); }
-    else { seen[idx] = e.o; }
+  PATHWAY.forEach(entry=>{
+    if(entry.type !== "choice") return;
+    const key = getChoiceSelectionKey(entry);
+    if(!key) return;
+    const priorOrder = seen.get(key);
+    if(priorOrder !== undefined){
+      dupes.add(entry.o);
+      dupes.add(priorOrder);
+    } else {
+      seen.set(key, entry.o);
+    }
   });
   return dupes;
 }
@@ -840,7 +859,7 @@ function renderPathway(){
   rail.innerHTML = "";
   let anyVisible = false;
   const nextUpOrder = getNextUpOrder();
-  const dupeOrders = getDuplicateElectiveOrders();
+  const dupeOrders = getDuplicateChoiceOrders();
 
   PATHWAY.forEach(entry=>{
     const c = resolveCourse(entry);
@@ -899,10 +918,10 @@ function renderPathway(){
       metaDiv.className = "meta";
       metaDiv.innerHTML = `<span><b>Prereq:</b> ${c.prereq}</span>`;
       left.appendChild(metaDiv);
-      if(entry.menu === "majorelective" && dupeOrders.has(entry.o)){
+      if(dupeOrders.has(entry.o)){
         const warn = document.createElement("div");
         warn.className = "warn-tag";
-        warn.textContent = "Duplicate pick — another Major Elective slot has this same course";
+        warn.textContent = "Duplicate pick — this course is selected in another slot";
         left.appendChild(warn);
       }
       if(entry.menu === "generalelective"){
