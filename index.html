@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Learning Pathway — B.Sc. Computer Science</title>
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">
-<link rel="shortcut icon" href="./favicon.svg">
+<link rel="icon" type="image/png" href="./favicon.png">
+<link rel="shortcut icon" href="./favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -368,20 +368,37 @@ const ELECTIVE_MENUS = {
       {name:"Epidemiology", code:"HS 3311", prereq:"HS 2211", sophia:""},
       {name:"Human Development in Global Perspective", code:"HS 3610", prereq:"HS 2712", sophia:"Lifespan Development"},
     ]},
-  generalelective: { label: "General Elective Choices", note: "At UoPeople, a 'General Elective' is any General Education course or any course/elective from another major (Business, Health Science, CS).",
-    options: [
-      {name:"Principles of Business Management", code:"BUS 1101", prereq:"None", sophia:"Introduction to Business"},
-      {name:"Basic Accounting", code:"BUS 1102", prereq:"BUS 1101", sophia:"Financial Accounting"},
-      {name:"Principles of Marketing", code:"BUS 2201", prereq:"BUS 1101", sophia:"Principles of Marketing"},
-      {name:"Personal Finance", code:"BUS 2204", prereq:"BUS 1101", sophia:"Personal Finance"},
-      {name:"Introduction to Health Science", code:"HS 1101", prereq:"None", sophia:""},
-      {name:"Nutrition", code:"HS 2611", prereq:"BIOL 1122", sophia:"Human Nutrition"},
-      {name:"Anatomy and Physiology", code:"HS 2211", prereq:"BIOL 1122", sophia:"Anatomy and Physiology I"},
-      {name:"Introduction to Business", code:"BUS 1101-S", prereq:"None", sophia:"Introduction to Business"},
-      {name:"Project Management", code:"BUS 2202-S", prereq:"None", sophia:"Project Management"},
-      {name:"Workplace Communication", code:"COM 1001", prereq:"None", sophia:"Workplace Communications"},
-    ]}
+  generalelective: { label: "General Elective Choices", note: "Qualified General Electives include any General Education course plus any course/elective from Business Administration, Health Science, or Computer Science.",
+    options: []}
 };
+
+const QUALIFIED_GENERAL_ELECTIVE_OPTIONS = [];
+const QUALIFIED_GENERAL_ELECTIVE_SEEN = new Set();
+function addQualifiedGeneralElectiveOption(opt){
+  const key = `${(opt.code || "").toLowerCase()}|${(opt.name || "").toLowerCase()}`;
+  if(QUALIFIED_GENERAL_ELECTIVE_SEEN.has(key)) return;
+  QUALIFIED_GENERAL_ELECTIVE_SEEN.add(key);
+  QUALIFIED_GENERAL_ELECTIVE_OPTIONS.push({ ...opt });
+}
+[
+  ...ELECTIVE_MENUS.socbehav.options,
+  ...ELECTIVE_MENUS.ethics.options,
+  ...ELECTIVE_MENUS.natsci.options,
+  ...ELECTIVE_MENUS.humanities.options,
+  ...ELECTIVE_MENUS.civilization.options,
+  ...ELECTIVE_MENUS.bus_major.options,
+  ...ELECTIVE_MENUS.hs_major.options,
+  ...ELECTIVE_MENUS.majorelective.options,
+  ...ELECTIVE_MENUS.majormodules.options,
+  {name:"English Composition 1", code:"ENGL 1101", prereq:"None", sophia:"English Composition I"},
+  {name:"English Composition 2", code:"ENGL 1102", prereq:"None", sophia:"English Composition I"},
+  {name:"College Algebra", code:"MATH 1201", prereq:"None", sophia:"College Algebra"},
+  {name:"Introduction to Statistics", code:"MATH 1280", prereq:"None", sophia:"Introduction to Statistics"},
+  {name:"Calculus", code:"MATH 1211", prereq:"MATH 1201", sophia:"Calculus I"},
+  {name:"Discrete Mathematics", code:"MATH 1302", prereq:"None", sophia:"Take at UoPeople"},
+  {name:"Workplace Communication", code:"COM 1001", prereq:"None", sophia:"Workplace Communications"}
+].forEach(addQualifiedGeneralElectiveOption);
+ELECTIVE_MENUS.generalelective.options = QUALIFIED_GENERAL_ELECTIVE_OPTIONS;
 
 const PATHWAY = [
   {o:1, type:"fixed", name:"Online Education Strategies", code:"UNIV 1001", prereq:"None", cat:"Gen Ed", sophia:"Take at UoPeople (Mandatory Residency)"},
@@ -879,6 +896,12 @@ function renderPathway(){
         warn.className = "warn-tag";
         warn.textContent = "Duplicate pick — another Major Elective slot has this same course";
         left.appendChild(warn);
+      }
+      if(entry.menu === "generalelective"){
+        const noteEl = document.createElement("div");
+        noteEl.style = "font-size:12px; color:var(--text-soft); margin-top:8px; line-height:1.5;";
+        noteEl.textContent = "Qualified General Electives include any General Education course plus any course or elective from Business Administration, Health Science, or Computer Science.";
+        left.appendChild(noteEl);
       }
     } else if(entry.type === "freetext"){
       const lbl = document.createElement("div");
