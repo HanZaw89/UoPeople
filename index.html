@@ -254,6 +254,7 @@
         <div class="inputrow"><label>Sophia courses completed / month</label><input type="number" id="in_sophiaPace" value="2" min="0.5" step="0.5"></div>
         <div class="inputrow"><label>UoPeople courses / term (avg)</label><input type="number" id="in_uopPace" value="2.5" min="1" step="0.5"></div>
         <div class="inputrow"><label>UoPeople terms / year</label><input type="number" id="in_termsPerYear" value="5" min="1" step="1"></div>
+        <div class="inputrow"><label>Target total timeline (months)</label><input type="number" id="in_targetMonths" value="60" min="6" step="1"></div>
         <div class="inputrow"><label>UoPeople fee per direct course (USD)</label><input type="number" id="in_uopFee" value="180" min="0" step="10"></div>
         <div class="inputrow"><label>Sophia subscription cost / month (USD)</label><input type="number" id="in_sophiaCost" value="99" min="0" step="10"></div>
         <div class="inputrow"><label>Scholarship covers per-course fee?</label><input type="checkbox" id="in_scholarship" checked></div>
@@ -264,6 +265,8 @@
         <div class="resultrow"><span>Remaining direct at UoPeople</span><span class="v" id="out_directCount">-</span></div>
         <div class="resultrow"><span>Sophia phase duration</span><span class="v" id="out_sophiaMonths">-</span></div>
         <div class="resultrow"><span>UoPeople phase duration</span><span class="v" id="out_uopMonths">-</span></div>
+        <div class="resultrow"><span>Recommended UoPeople courses</span><span class="v" id="out_recommendedUopCourses">-</span></div>
+        <div class="resultrow"><span>Recommended Sophia courses</span><span class="v" id="out_recommendedSophiaCourses">-</span></div>
         <div class="resultrow"><span>Estimated total cost</span><span class="v" id="out_totalCost">-</span></div>
         <div class="resultrow"><span>Estimated total time</span><span class="v" id="out_totalTime">-</span></div>
       </div>
@@ -506,7 +509,7 @@ function getDefaultState(){
     freeText: {},
     notes: {},
     theme: "dark",
-    planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, uopFee: 180, sophiaCost: 99, scholarship: true }
+    planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true }
   };
 }
 
@@ -530,7 +533,7 @@ function deepMerge(target, source){
 }
 
 function getPlanningDefaults(){
-  return { sophiaPace:2, uopPace:2.5, termsPerYear:5, uopFee:180, sophiaCost:99, scholarship:true };
+  return { sophiaPace:2, uopPace:2.5, termsPerYear:5, targetMonths:60, uopFee:180, sophiaCost:99, scholarship:true };
 }
 
 function mergeStateWithDefaults(stateData, defaultsData){
@@ -1210,7 +1213,7 @@ function clearElectiveCourseForm(){
 
 function renderPlanning(){
   const p = STATE.planning || getPlanningDefaults();
-  ["sophiaPace","uopPace","termsPerYear","uopFee","sophiaCost"].forEach(key=>{
+  ["sophiaPace","uopPace","termsPerYear","targetMonths","uopFee","sophiaCost"].forEach(key=>{
     const el = document.getElementById("in_"+key);
     if(el && document.activeElement !== el) el.value = p[key];
   });
@@ -1228,6 +1231,17 @@ function renderPlanning(){
   const uopMonths = p.termsPerYear > 0 ? (uopTerms / p.termsPerYear) * 12 : 0;
   const totalMonths = sophiaMonths + uopMonths;
 
+  const targetMonths = Math.max(0, Number(p.targetMonths) || 0);
+  const uopMonthPerCourse = p.uopPace > 0 && p.termsPerYear > 0 ? 12 / (p.uopPace * p.termsPerYear) : 0;
+  const sophiaMonthPerCourse = p.sophiaPace > 0 ? 1 / p.sophiaPace : 0;
+  let recommendedUopCourses = 0;
+  let recommendedSophiaCourses = 0;
+  if(targetMonths > 0){
+    recommendedUopCourses = Math.min(direct, Math.floor(targetMonths / uopMonthPerCourse));
+    const remainingMonths = Math.max(0, targetMonths - recommendedUopCourses * uopMonthPerCourse);
+    recommendedSophiaCourses = Math.min(transferring, Math.floor(remainingMonths / sophiaMonthPerCourse));
+  }
+
   const sophiaCostTotal = sophiaMonths * p.sophiaCost;
   const uopFeesTotal = p.scholarship ? 0 : direct * p.uopFee;
   const transferFeesTotal = transferring > 20 ? (transferring - 20) * 17 : 0;
@@ -1237,12 +1251,14 @@ function renderPlanning(){
   document.getElementById("out_directCount").textContent = direct + " courses";
   document.getElementById("out_sophiaMonths").textContent = sophiaMonths.toFixed(1) + " months";
   document.getElementById("out_uopMonths").textContent = uopMonths.toFixed(1) + " months (" + uopTerms + " terms)";
+  document.getElementById("out_recommendedUopCourses").textContent = recommendedUopCourses + " courses";
+  document.getElementById("out_recommendedSophiaCourses").textContent = recommendedSophiaCourses + " courses";
   document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
   document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
 }
 
 function wirePlanningInputs(){
-  [["in_sophiaPace","sophiaPace"],["in_uopPace","uopPace"],["in_termsPerYear","termsPerYear"],["in_uopFee","uopFee"],["in_sophiaCost","sophiaCost"]].forEach(([id,key])=>{
+  [["in_sophiaPace","sophiaPace"],["in_uopPace","uopPace"],["in_termsPerYear","termsPerYear"],["in_targetMonths","targetMonths"],["in_uopFee","uopFee"],["in_sophiaCost","sophiaCost"]].forEach(([id,key])=>{
     const el = document.getElementById(id);
     if(el){
       el.addEventListener("input", (e)=>{
