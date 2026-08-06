@@ -240,6 +240,7 @@
     <div class="toolbar">
       <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="electiveSearchInput" placeholder="Search options by name or code..."></div>
     </div>
+    <div class="slot-note" style="margin-bottom:14px;"><strong>Major Modules reference:</strong> This section now includes the official core computer science modules from the learning pathway alongside the elective options.</div>
     <div class="menu-tabs" id="menuTabs"></div>
     <div id="menuContent"></div>
   </div>
@@ -315,6 +316,25 @@ const ELECTIVE_MENUS = {
       {name:"Mobile Applications", code:"CS 4405", prereq:"CS 2205", sophia:""},
       {name:"Computer Graphics", code:"CS 4406", prereq:"CS 1103", sophia:""},
       {name:"Artificial Intelligence", code:"CS 4408", prereq:"CS 4407", sophia:""},
+    ]},
+  majormodules: { label: "Major Modules", note: "Core major modules from the official UoPeople learning pathway, grouped for quick reference.",
+    options: [
+      {name:"Introduction to Computer Science", code:"CS 1111", prereq:"None", sophia:"Introduction to Information Technology"},
+      {name:"Programming Fundamentals", code:"CS 1101", prereq:"None", sophia:"Introduction to Python Programming"},
+      {name:"Programming 1", code:"CS 1102", prereq:"CS 1101", sophia:"Introduction to Java Programming"},
+      {name:"Programming 2", code:"CS 1103", prereq:"CS 1102", sophia:"Introduction to Java Programming"},
+      {name:"Digital Electronics and Computer Architecture", code:"CS 1105", prereq:"None", sophia:"Take at UoPeople"},
+      {name:"Databases 1", code:"CS 2203", prereq:"None", sophia:"Introduction to Relational Databases"},
+      {name:"Communications and Networking", code:"CS 2204", prereq:"None", sophia:"Introduction to Networking"},
+      {name:"Web Programming 1", code:"CS 2205", prereq:"CS 1103", sophia:"Introduction to Web Development"},
+      {name:"Operating Systems 1", code:"CS 2301", prereq:"CS 1103", sophia:"Take at UoPeople"},
+      {name:"Software Engineering 1", code:"CS 2401", prereq:"CS 1103", sophia:"Software Engineering"},
+      {name:"Data Structures", code:"CS 3303", prereq:"CS 1103", sophia:"Take at UoPeople"},
+      {name:"Web Programming 2", code:"CS 3305", prereq:"CS 2205", sophia:"Take at UoPeople"},
+      {name:"Databases 2", code:"CS 3306", prereq:"CS 2203", sophia:"Take at UoPeople"},
+      {name:"Operating Systems 2", code:"CS 3307", prereq:"CS 2301", sophia:"Take at UoPeople"},
+      {name:"Comparative Programming Languages", code:"CS 4402", prereq:"CS 1103", sophia:"Take at UoPeople"},
+      {name:"Data Mining and Machine Learning", code:"CS 4407", prereq:"CS 3303", sophia:"Take at UoPeople"},
     ]},
   bus_major: { label: "Business Administration Majors", note: "Official Business Administration core courses usable for General Electives.",
     options: [
