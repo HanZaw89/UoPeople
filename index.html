@@ -269,10 +269,12 @@
       </div>
     </div>
     <div class="panel" style="margin-top:16px;">
-      <h3>Separate timeline-based planner</h3>
+      <h3>Timeline-based study split</h3>
       <div class="inputrow"><label>Target total timeline (months)</label><input type="number" id="in_targetMonths" value="60" min="6" step="1"></div>
-      <div class="resultrow"><span>Recommended UoPeople courses</span><span class="v" id="out_recommendedUopCourses">-</span></div>
-      <div class="resultrow"><span>Recommended Sophia courses</span><span class="v" id="out_recommendedSophiaCourses">-</span></div>
+      <div class="resultrow"><span>UoPeople pace per term</span><span class="v" id="out_uopPacePerTerm">-</span></div>
+      <div class="resultrow"><span>UoPeople total modules</span><span class="v" id="out_recommendedUopCourses">-</span></div>
+      <div class="resultrow"><span>Sophia pace per month</span><span class="v" id="out_sophiaPacePerMonth">-</span></div>
+      <div class="resultrow"><span>Sophia total modules</span><span class="v" id="out_recommendedSophiaCourses">-</span></div>
     </div>
   </div>
 
@@ -1239,6 +1241,8 @@ function renderPlanning(){
   const targetMonths = Math.max(0, Number(p.targetMonths) || 0);
   const uopMonthPerCourse = p.uopPace > 0 && p.termsPerYear > 0 ? 12 / (p.uopPace * p.termsPerYear) : 0;
   const sophiaMonthPerCourse = p.sophiaPace > 0 ? 1 / p.sophiaPace : 0;
+  const uopPacePerTerm = p.uopPace > 0 ? p.uopPace : 0;
+  const sophiaPacePerMonth = p.sophiaPace > 0 ? p.sophiaPace : 0;
   let recommendedUopCourses = 0;
   let recommendedSophiaCourses = 0;
   if(targetMonths > 0 && uopMonthPerCourse > 0 && sophiaMonthPerCourse > 0){
@@ -1256,7 +1260,9 @@ function renderPlanning(){
   document.getElementById("out_directCount").textContent = direct + " courses";
   document.getElementById("out_sophiaMonths").textContent = sophiaMonths.toFixed(1) + " months";
   document.getElementById("out_uopMonths").textContent = uopMonths.toFixed(1) + " months (" + uopTerms + " terms)";
+  document.getElementById("out_uopPacePerTerm").textContent = uopPacePerTerm.toFixed(1) + " courses/term";
   document.getElementById("out_recommendedUopCourses").textContent = recommendedUopCourses + " courses";
+  document.getElementById("out_sophiaPacePerMonth").textContent = sophiaPacePerMonth.toFixed(1) + " courses/month";
   document.getElementById("out_recommendedSophiaCourses").textContent = recommendedSophiaCourses + " courses";
   document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
   document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
