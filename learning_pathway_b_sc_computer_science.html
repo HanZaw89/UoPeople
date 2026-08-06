@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Pathway — B.Sc. Computer Science</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="dark"]{
+    --bg:#101218; --bg-soft:#161923; --card:#1B1F2B; --line:#2B303D;
+    --text:#EDEBE3; --text-soft:#9AA0AE;
+    --gold:#D9A94E; --amber:#E0A64B; --amber-soft:#3A2E1A;
+    --teal:#4FB89D; --teal-soft:#183430;
+    --slate:#767C8A; --slate-soft:#232733;
+    --danger:#E07A6B; --danger-soft:#3A2420;
+  }
+  [data-theme="light"]{
+    --bg:#F5F1E7; --bg-soft:#EFE9DA; --card:#FFFDF8; --line:#DCD4C0;
+    --text:#1B2740; --text-soft:#5B6478;
+    --gold:#A6791E; --amber:#B5771F; --amber-soft:#F1E1BE;
+    --teal:#2F6F5E; --teal-soft:#DCEAE4;
+    --slate:#8B8F98; --slate-soft:#E7E6E3;
+    --danger:#B5453A; --danger-soft:#F1E1DD;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'IBM Plex Sans', sans-serif; -webkit-font-smoothing:antialiased; transition:background .2s, color .2s;}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
+  h1,h2,h3{font-family:'Fraunces', serif; margin:0; letter-spacing:-0.01em;}
+  code, .mono{font-family:'IBM Plex Mono', monospace;}
+
+  header.top{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:8px; flex-wrap:wrap;}
+  .eyebrow{font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); font-weight:600; margin-bottom:6px;}
+  h1{font-size:36px; font-weight:700; color:var(--text);}
+  .subtitle{color:var(--text-soft); font-size:15px; margin-top:6px; max-width:560px;}
+  .headerRight{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+  .syncbadge{font-size:11.5px; padding:5px 11px; border-radius:20px; font-weight:600; white-space:nowrap;}
+  .syncbadge.ok{background:var(--teal-soft); color:var(--teal);}
+  .syncbadge.saving{background:var(--amber-soft); color:var(--amber);}
+  .syncbadge.err{background:var(--danger-soft); color:var(--danger);}
+  .lastsaved{font-size:11px; color:var(--text-soft);}
+  .headerBtns{display:flex; gap:6px; margin-top:4px;}
+  .iconbtn{
+    font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; padding:6px 11px; border-radius:8px;
+    border:1px solid var(--line); background:var(--card); color:var(--text-soft); cursor:pointer;
+  }
+  .iconbtn:hover{filter:brightness(1.15); color:var(--text);}
+
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:28px 0 12px;}
+  .stat{background:var(--card); padding:16px 18px;}
+  .stat .num{font-family:'Fraunces', serif; font-size:28px; font-weight:600; line-height:1; color:var(--text);}
+  .stat .lbl{font-size:11.5px; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px;}
+  .catbreak{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px;}
+  .catbreak .cb{background:var(--bg-soft); padding:10px 14px;}
+  .catbreak .cb .t{font-size:11px; color:var(--text-soft); text-transform:uppercase; letter-spacing:.05em;}
+  .catbreak .cb .v{font-size:15px; font-weight:600; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+  .progressbar{height:8px; border-radius:5px; background:var(--slate-soft); overflow:hidden; margin-top:12px;}
+  .progressbar > div{height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .4s ease;}
+  .progress-caption{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-soft); margin-top:6px;}
+
+  .tabs{display:flex; gap:6px; margin:36px 0 18px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+  .tab{padding:10px 16px; font-size:13.5px; font-weight:600; color:var(--text-soft); cursor:pointer; border-bottom:2px solid transparent; user-select:none;}
+  .tab.active{color:var(--text); border-bottom-color:var(--gold);}
+  .tab:hover{color:var(--text);}
+
+  .toolbar{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;}
+  .searchbox{position:relative; flex:1; min-width:220px; max-width:320px;}
+  .searchbox input{width:100%; padding:9px 12px 9px 34px; border-radius:20px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'IBM Plex Sans',sans-serif; font-size:13px;}
+  .searchbox input::placeholder{color:var(--text-soft);}
+  .searchbox .icon{position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); font-size:13px;}
+  .filters{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{font-size:12px; padding:6px 12px; border-radius:20px; border:1px solid var(--line); background:var(--card); cursor:pointer; color:var(--text-soft); font-weight:500;}
+  .chip.active{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
+  .togglewrap{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-soft); cursor:pointer; user-select:none;}
+  .togglewrap input{accent-color:var(--gold);}
+
+  .rail{position:relative; padding-left:36px;}
+  .rail::before{content:""; position:absolute; left:12px; top:6px; bottom:6px; width:2px; background:repeating-linear-gradient(to bottom, var(--line) 0 6px, transparent 6px 11px);}
+  .node{position:relative; margin-bottom:14px;}
+  .node .dot{position:absolute; left:-36px; top:18px; width:24px; height:24px; border-radius:50%; background:var(--slate-soft); border:2px solid var(--slate); display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; color:var(--text-soft); font-family:'IBM Plex Mono',monospace;}
+  .node.done .dot{background:var(--teal); border-color:var(--teal); color:var(--bg);}
+  .node.learning .dot{background:var(--amber); border-color:var(--amber); color:var(--bg);}
+  .node.nextup .card{outline:2px solid var(--gold); box-shadow:0 0 0 4px rgba(217,169,78,0.12);}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .card .left{flex:1; min-width:240px;}
+  .card .name{font-size:15.5px; font-weight:600; color:var(--text);}
+  .card .code{color:var(--text-soft); font-size:12.5px; margin-top:2px;}
+  .card .meta{font-size:12px; color:var(--text-soft); margin-top:6px; display:flex; gap:14px; flex-wrap:wrap;}
+  .card .meta b{color:var(--text); font-weight:600;}
+  .card .sophia-row{margin-top:8px; display:flex; align-items:center; gap:8px;}
+  .card .sophia-row .tag{font-size:10.5px; color:var(--gold); font-weight:700; letter-spacing:.04em;}
+  .card input.sophia-input{font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); flex:1; min-width:160px;}
+  input.table-sophia-input{width:100%; min-width:150px; padding:5px 8px; font-size:12px; font-family:'IBM Plex Sans',sans-serif; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text);}
+  .nextup-tag{font-size:10.5px; font-weight:700; letter-spacing:.06em; color:#1B1F2B; background:var(--gold); padding:3px 9px; border-radius:12px; margin-bottom:6px; display:inline-block;}
+  .warn-tag{font-size:11.5px; color:var(--danger); background:var(--danger-soft); padding:4px 10px; border-radius:8px; margin-top:8px; display:inline-block;}
+  textarea.notes{
+    width:100%; margin-top:8px; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:8px 10px;
+    border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); resize:vertical; min-height:34px;
+  }
+
+  select.picker, input.freetext{font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); width:100%; margin-top:4px;}
+  select.picker option{background:var(--card); color:var(--text);}
+
+  .controls{display:flex; flex-direction:column; gap:8px; align-items:flex-end;}
+  button.statusbtn{font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:var(--slate-soft); color:var(--text-soft); transition:all .15s ease; white-space:nowrap;}
+  button.statusbtn.learning{background:var(--amber-soft); color:var(--amber); border-color:var(--amber);}
+  button.statusbtn.done{background:var(--teal-soft); color:var(--teal); border-color:var(--teal);}
+  button.statusbtn:hover{filter:brightness(1.15);}
+
+  button.transferbtn{font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px; border:1px dashed var(--line); cursor:pointer; background:var(--bg-soft); color:var(--text-soft); white-space:nowrap;}
+  button.transferbtn.transferable{border-style:solid; border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
+  button.transferbtn.plan{border-style:solid; border-color:var(--amber); color:var(--amber); background:var(--amber-soft);}
+  button.transferbtn.not-transferable{border-style:solid; border-color:var(--slate); color:var(--slate); background:var(--slate-soft);}
+  button.transferbtn:hover{filter:brightness(1.15);}
+
+  .menu-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
+  .menu-tab-btn{padding:9px 15px; border-radius:9px; border:1px solid var(--line); background:var(--card); font-size:13px; font-weight:600; cursor:pointer; color:var(--text-soft);}
+  .menu-tab-btn.active{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
+  table{width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; border:1px solid var(--line);}
+  th{text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-soft); padding:12px 14px; background:var(--bg-soft); border-bottom:1px solid var(--line); font-weight:600;}
+  td{padding:12px 14px; font-size:13.5px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--text);}
+  tr:last-child td{border-bottom:none;}
+  .slot-note{font-size:12.5px; color:var(--text-soft); margin-bottom:14px; padding:10px 14px; background:var(--card); border:1px solid var(--line); border-radius:9px; line-height:1.5;}
+  .empty-note{font-size:13px; color:var(--text-soft); padding:20px; text-align:center;}
+
+  .plan-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:800px){ .plan-grid{grid-template-columns:1fr;} }
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px;}
+  .panel h3{font-size:15px; margin-bottom:14px;}
+  .inputrow{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; font-size:13px;}
+  .inputrow label{color:var(--text-soft); flex:1;}
+  .inputrow input[type=number]{width:80px; padding:6px 8px; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  .inputrow input[type=checkbox]{accent-color:var(--gold); width:16px; height:16px;}
+  .resultrow{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .resultrow:last-child{border-bottom:none; padding-top:12px; font-weight:700; font-size:15px;}
+  .resultrow .v{font-family:'IBM Plex Mono',monospace; color:var(--gold);}
+
+  /* Modal overlay replacing alert/confirm */
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:1000;}
+  .modal-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; max-width:420px; width:92%; box-shadow:0 20px 40px rgba(0,0,0,0.5);}
+  .modal-card h3{margin-bottom:10px; font-size:18px; color:var(--text);}
+  .modal-card p{font-size:13.5px; color:var(--text-soft); line-height:1.5; margin-bottom:20px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px;}
+  .modal-btn{font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; font-weight:600; padding:8px 16px; border-radius:8px; border:1px solid var(--line); cursor:pointer;}
+  .modal-btn.primary{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
+  .modal-btn.danger{background:var(--danger); color:#fff; border-color:var(--danger);}
+  .modal-btn.secondary{background:var(--bg-soft); color:var(--text-soft);}
+
+  footer{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); font-size:12px; color:var(--text-soft);}
+  #importFileInput{display:none;}
+
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .catbreak{grid-template-columns:repeat(2,1fr);}
+    h1{font-size:27px;}
+    .rail{padding-left:28px;}
+    .node .dot{left:-28px; width:20px; height:20px; font-size:9px;}
+  }
+  @media (prefers-reduced-motion: reduce){ * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">B.Sc. Computer Science · University of the People</div>
+      <h1>Learning Pathway</h1>
+      <div class="subtitle">Your 40-course sequence, Sophia Learning mapping, and elective choices — customized for your journey.</div>
+    </div>
+    <div class="headerRight">
+      <div class="syncbadge ok" id="syncBadge">Synced</div>
+      <div class="lastsaved" id="lastSaved">Not saved yet</div>
+      <div class="headerBtns">
+        <button class="iconbtn" id="themeToggleBtn">Light mode</button>
+        <button class="iconbtn" id="exportBtn">Export</button>
+        <button class="iconbtn" id="importBtn">Import</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json">
+    </div>
+  </header>
+
+  <div class="stats" id="statsRail"></div>
+  <div class="catbreak" id="catBreak"></div>
+  <div class="progressbar"><div id="progressFill" style="width:0%"></div></div>
+  <div class="progress-caption"><span id="progressLabel">0 of 40 completed</span><span id="progressPct">0%</span></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="pathway">Pathway</div>
+    <div class="tab" data-tab="electives">Elective Menus</div>
+    <div class="tab" data-tab="planning">Planning</div>
+  </div>
+
+  <div id="tab-pathway">
+    <div class="toolbar">
+      <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="searchInput" placeholder="Search course name or code..."></div>
+      <div class="filters" id="filterChips"></div>
+    </div>
+    <div class="toolbar">
+      <div class="filters" id="transferFilterChips"></div>
+      <label class="togglewrap"><input type="checkbox" id="hideDoneToggle"> Hide completed</label>
+    </div>
+    <div class="rail" id="pathwayRail"></div>
+  </div>
+
+  <div id="tab-electives" style="display:none;">
+    <div class="panel" style="margin-bottom:18px;">
+      <h3 style="margin-bottom:12px;">Manage elective courses</h3>
+      <div class="inputrow">
+        <label>Category</label>
+        <select id="manageMenuSelect" class="picker" style="width:220px; margin-top:0;"></select>
+      </div>
+      <div class="inputrow">
+        <label>Existing course</label>
+        <select id="manageCourseSelect" class="picker" style="width:220px; margin-top:0;"></select>
+      </div>
+      <div class="inputrow">
+        <label>Course name</label>
+        <input id="manageCourseName" class="freetext" style="max-width:320px; margin-top:0;">
+      </div>
+      <div class="inputrow">
+        <label>Course code</label>
+        <input id="manageCourseCode" class="freetext" style="max-width:220px; margin-top:0;">
+      </div>
+      <div class="inputrow">
+        <label>Prerequisite</label>
+        <input id="manageCoursePrereq" class="freetext" style="max-width:320px; margin-top:0;">
+      </div>
+      <div class="inputrow">
+        <label>Sophia suggestion</label>
+        <input id="manageCourseSophia" class="freetext" style="max-width:320px; margin-top:0;">
+      </div>
+      <div class="modal-actions" style="justify-content:flex-start; gap:8px;">
+        <button class="modal-btn primary" id="saveElectiveCourseBtn">Save course</button>
+        <button class="modal-btn secondary" id="clearElectiveCourseBtn">Clear</button>
+        <button class="modal-btn danger" id="deleteElectiveCourseBtn">Delete selected</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="electiveSearchInput" placeholder="Search options by name or code..."></div>
+    </div>
+    <div class="menu-tabs" id="menuTabs"></div>
+    <div id="menuContent"></div>
+  </div>
+
+  <div id="tab-planning" style="display:none;">
+    <div class="plan-grid">
+      <div class="panel">
+        <h3>Your assumptions</h3>
+        <div class="inputrow"><label>Sophia courses completed / month</label><input type="number" id="in_sophiaPace" value="2" min="0.5" step="0.5"></div>
+        <div class="inputrow"><label>UoPeople courses / term (avg)</label><input type="number" id="in_uopPace" value="2.5" min="1" step="0.5"></div>
+        <div class="inputrow"><label>UoPeople terms / year</label><input type="number" id="in_termsPerYear" value="5" min="1" step="1"></div>
+        <div class="inputrow"><label>UoPeople fee per direct course (USD)</label><input type="number" id="in_uopFee" value="180" min="0" step="10"></div>
+        <div class="inputrow"><label>Sophia subscription cost / month (USD)</label><input type="number" id="in_sophiaCost" value="99" min="0" step="10"></div>
+        <div class="inputrow"><label>Scholarship covers per-course fee?</label><input type="checkbox" id="in_scholarship" checked></div>
+      </div>
+      <div class="panel">
+        <h3>What your current choices mean</h3>
+        <div class="resultrow"><span>Marked Transferable or Plan to transfer</span><span class="v" id="out_sophiaCount">-</span></div>
+        <div class="resultrow"><span>Remaining direct at UoPeople</span><span class="v" id="out_directCount">-</span></div>
+        <div class="resultrow"><span>Sophia phase duration</span><span class="v" id="out_sophiaMonths">-</span></div>
+        <div class="resultrow"><span>UoPeople phase duration</span><span class="v" id="out_uopMonths">-</span></div>
+        <div class="resultrow"><span>Estimated total cost</span><span class="v" id="out_totalCost">-</span></div>
+        <div class="resultrow"><span>Estimated total time</span><span class="v" id="out_totalTime">-</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalOverlay" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <h3 id="modalTitle">Notice</h3>
+      <p id="modalMessage"></p>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <footer>Built from your UoPeople BS-CS catalog pathway and Sophia Learning's recommended course list. All transfer decisions are yours to make.</footer>
+</div>
+
+<script>
+const ELECTIVE_MENUS = {
+  socbehav: { label: "Social & Behavior Science", note: "Two slots (positions 5 & 23) draw from this official list.",
+    options: [
+      {name:"Introduction to Economics", code:"ECON 1580", prereq:"None", sophia:""},
+      {name:"Globalization", code:"POLS 1503", prereq:"None", sophia:""},
+      {name:"Introduction to Health Psychology", code:"PSYC 1111", prereq:"None", sophia:""},
+      {name:"Emotional Intelligence", code:"PSYC 1205", prereq:"None", sophia:""},
+      {name:"Introduction to Psychology", code:"PSYC 1504", prereq:"None", sophia:"Introduction to Psychology"},
+      {name:"Introduction to Sociology", code:"SOC 1502", prereq:"None", sophia:"Introduction to Sociology"},
+    ]},
+  ethics: { label: "Values & Ethical Reasoning", note: "One fixed slot (position 9). Only one option exists officially.",
+    options: [ {name:"Ethics and Social Responsibility", code:"PHIL 1404", prereq:"None", sophia:"Introduction to Ethics"} ]},
+  natsci: { label: "Natural Science & Technology", note: "One slot (position 14). Only one course needed — pick either.",
+    options: [
+      {name:"Introduction to Biology", code:"BIOL 1301", prereq:"None", sophia:"Human Biology"},
+      {name:"Introduction to Environmental Sciences", code:"ENVS 1301", prereq:"None", sophia:"Environmental Science"},
+    ]},
+  humanities: { label: "Humanities", note: "Two slots (positions 17 & 21) draw from this official list.",
+    options: [
+      {name:"Art History", code:"AHIST 1401", prereq:"None", sophia:"Art History I"},
+      {name:"Introduction to Philosophy", code:"PHIL 1402", prereq:"None", sophia:"Ancient Greek Philosophers"},
+      {name:"World Literature", code:"ENGL 1405", prereq:"None", sophia:""},
+    ]},
+  civilization: { label: "Civilization Studies, Culture & Belief", note: "One slot (position 19). Only one course exists officially.",
+    options: [ {name:"Greek and Roman Civilization", code:"HIST 1421", prereq:"None", sophia:"Approaches to Studying Religions"} ]},
+  majorelective: { label: "Major Elective (Computer Science)", note: "Nine slots (24, 31–33, 35–38, 40). Official CS catalog electives.",
+    options: [
+      {name:"Analysis of Algorithms", code:"CS 3304", prereq:"CS 3303", sophia:""},
+      {name:"Information Retrieval", code:"CS 3308", prereq:"CS 3303", sophia:""},
+      {name:"Systems and Application Security", code:"CS 3340", prereq:"CS 2204", sophia:""},
+      {name:"Big Data", code:"CS 3440", prereq:"CS 3303", sophia:""},
+      {name:"Software Engineering 2", code:"CS 4403", prereq:"CS 2401", sophia:""},
+      {name:"Advanced Networking and Data Security", code:"CS 4404", prereq:"CS 2204", sophia:""},
+      {name:"Mobile Applications", code:"CS 4405", prereq:"CS 2205", sophia:""},
+      {name:"Computer Graphics", code:"CS 4406", prereq:"CS 1103", sophia:""},
+      {name:"Artificial Intelligence", code:"CS 4408", prereq:"CS 4407", sophia:""},
+    ]},
+  bus_major: { label: "Business Administration Majors", note: "Official Business Administration core courses usable for General Electives.",
+    options: [
+      {name:"Principles of Business Management", code:"BUS 1101", prereq:"None", sophia:"Introduction to Business"},
+      {name:"Basic Accounting", code:"BUS 1102", prereq:"BUS 1101", sophia:"Financial Accounting"},
+      {name:"Microeconomics", code:"BUS 1103", prereq:"BUS 1101", sophia:"Microeconomics"},
+      {name:"Macroeconomics", code:"BUS 1104", prereq:"BUS 1101", sophia:"Macroeconomics"},
+      {name:"Principles of Marketing", code:"BUS 2201", prereq:"BUS 1101", sophia:"Principles of Marketing"},
+      {name:"E-Commerce", code:"BUS 2202", prereq:"BUS 1101", sophia:"Project Management"},
+      {name:"Principles of Finance 1", code:"BUS 2203", prereq:"BUS 1102", sophia:"Principles of Finance"},
+      {name:"Personal Finance", code:"BUS 2204", prereq:"BUS 1101", sophia:"Personal Finance"},
+      {name:"Multinational Management", code:"BUS 2207", prereq:"BUS 2201", sophia:"Business Law"},
+      {name:"Entrepreneurship 1", code:"BUS 3303", prereq:"BUS 2201", sophia:"Introduction to Business"},
+      {name:"Business Law and Ethics", code:"BUS 3305", prereq:"BUS 2201", sophia:"Business Law"},
+      {name:"Business and Society", code:"BUS 3306", prereq:"BUS 2207", sophia:"Workplace Communications"},
+      {name:"Organizational Behavior", code:"BUS 4402", prereq:"BUS 3306", sophia:"Organizational Behavior"},
+      {name:"Leadership", code:"BUS 4405", prereq:"BUS 3303", sophia:"Developing Effective Teams"},
+    ]},
+  hs_major: { label: "Health Science Majors", note: "Official Health Science major courses usable for General Electives.",
+    options: [
+      {name:"Introduction to Health Science", code:"HS 1101", prereq:"None", sophia:""},
+      {name:"Biology 1 for Health Studies Majors", code:"BIOL 1121", prereq:"None", sophia:"Human Biology"},
+      {name:"Biology 2 for Health Studies Majors", code:"BIOL 1122", prereq:"BIOL 1121, HS 1101", sophia:"Human Biology Lab"},
+      {name:"Nutrition", code:"HS 2611", prereq:"BIOL 1122", sophia:"Human Nutrition"},
+      {name:"Health Science 1", code:"HS 2711", prereq:"BIOL 1122", sophia:""},
+      {name:"Health Science 2", code:"HS 2712", prereq:"HS 2711", sophia:""},
+      {name:"Anatomy and Physiology", code:"HS 2211", prereq:"BIOL 1122", sophia:"Anatomy and Physiology I"},
+      {name:"Infectious Diseases", code:"HS 2212", prereq:"BIOL 1122", sophia:"Microbiology"},
+      {name:"Epidemiology", code:"HS 3311", prereq:"HS 2211", sophia:""},
+      {name:"Human Development in Global Perspective", code:"HS 3610", prereq:"HS 2712", sophia:"Lifespan Development"},
+    ]},
+  generalelective: { label: "General Elective Choices", note: "At UoPeople, a 'General Elective' is any General Education course or any course/elective from another major (Business, Health Science, CS).",
+    options: [
+      {name:"Principles of Business Management", code:"BUS 1101", prereq:"None", sophia:"Introduction to Business"},
+      {name:"Basic Accounting", code:"BUS 1102", prereq:"BUS 1101", sophia:"Financial Accounting"},
+      {name:"Principles of Marketing", code:"BUS 2201", prereq:"BUS 1101", sophia:"Principles of Marketing"},
+      {name:"Personal Finance", code:"BUS 2204", prereq:"BUS 1101", sophia:"Personal Finance"},
+      {name:"Introduction to Health Science", code:"HS 1101", prereq:"None", sophia:""},
+      {name:"Nutrition", code:"HS 2611", prereq:"BIOL 1122", sophia:"Human Nutrition"},
+      {name:"Anatomy and Physiology", code:"HS 2211", prereq:"BIOL 1122", sophia:"Anatomy and Physiology I"},
+      {name:"Introduction to Business", code:"BUS 1101-S", prereq:"None", sophia:"Introduction to Business"},
+      {name:"Project Management", code:"BUS 2202-S", prereq:"None", sophia:"Project Management"},
+      {name:"Workplace Communication", code:"COM 1001", prereq:"None", sophia:"Workplace Communications"},
+    ]}
+};
+
+const PATHWAY = [
+  {o:1, type:"fixed", name:"Online Education Strategies", code:"UNIV 1001", prereq:"None", cat:"Gen Ed", sophia:"Take at UoPeople (Mandatory Residency)"},
+  {o:2, type:"fixed", name:"Introduction to Computer Science", code:"CS 1111", prereq:"None", cat:"Major Required", sophia:"Introduction to Information Technology"},
+  {o:3, type:"fixed", name:"English Composition 2", code:"ENGL 1102", prereq:"None", cat:"Gen Ed", sophia:"English Composition I"},
+  {o:4, type:"fixed", name:"Programming Fundamentals", code:"CS 1101", prereq:"None", cat:"Major Required", sophia:"Introduction to Python Programming"},
+  {o:5, type:"choice", menu:"socbehav", cat:"Gen Ed", label:"Social & Behavior Science #1"},
+  {o:6, type:"fixed", name:"Programming 1", code:"CS 1102", prereq:"CS 1101", cat:"Major Required", sophia:"Introduction to Java Programming", note:"Sophia's Python/Java programming courses map to CS programming sequence."},
+  {o:7, type:"fixed", name:"College Algebra", code:"MATH 1201", prereq:"None", cat:"Gen Ed", sophia:"College Algebra"},
+  {o:8, type:"fixed", name:"Programming 2", code:"CS 1103", prereq:"CS 1102", cat:"Major Required", sophia:"Introduction to Java Programming"},
+  {o:9, type:"choice", menu:"ethics", cat:"Gen Ed", label:"Values & Ethical Reasoning"},
+  {o:10, type:"fixed", name:"Digital Electronics & Computer Architecture", code:"CS 1105", prereq:"None", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)"},
+  {o:11, type:"fixed", name:"Introduction to Statistics", code:"MATH 1280", prereq:"None", cat:"Gen Ed", sophia:"Introduction to Statistics"},
+  {o:12, type:"fixed", name:"Databases 1", code:"CS 2203", prereq:"None", cat:"Major Required", sophia:"Introduction to Relational Databases"},
+  {o:13, type:"fixed", name:"Communications and Networking", code:"CS 2204", prereq:"None", cat:"Major Required", sophia:"Introduction to Networking"},
+  {o:14, type:"choice", menu:"natsci", cat:"Gen Ed", label:"Natural Science & Technology"},
+  {o:15, type:"fixed", name:"Web Programming 1", code:"CS 2205", prereq:"CS 1103", cat:"Major Required", sophia:"Introduction to Web Development", note:"Proctored"},
+  {o:16, type:"fixed", name:"Professional Communication", code:"COM 2001", prereq:"None", cat:"Gen Ed", sophia:"Workplace Communications"},
+  {o:17, type:"choice", menu:"humanities", cat:"Gen Ed", label:"Humanities #1"},
+  {o:18, type:"fixed", name:"Operating Systems 1", code:"CS 2301", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:19, type:"choice", menu:"civilization", cat:"Gen Ed", label:"Civilization Studies, Culture & Belief"},
+  {o:20, type:"fixed", name:"Software Engineering 1", code:"CS 2401", prereq:"CS 1103", cat:"Major Required", sophia:"Software Engineering"},
+  {o:21, type:"choice", menu:"humanities", cat:"Gen Ed", label:"Humanities #2"},
+  {o:22, type:"fixed", name:"Data Structures", code:"CS 3303", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:23, type:"choice", menu:"socbehav", cat:"Gen Ed", label:"Social & Behavior Science #2"},
+  {o:24, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #1"},
+  {o:25, type:"choice", menu:"generalelective", cat:"General Elective", label:"General Elective Slot"},
+  {o:26, type:"fixed", name:"Web Programming 2", code:"CS 3305", prereq:"CS 2205", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:27, type:"fixed", name:"Calculus", code:"MATH 1211", prereq:"MATH 1201", cat:"Gen Ed", sophia:"Calculus I"},
+  {o:28, type:"fixed", name:"Databases 2", code:"CS 3306", prereq:"CS 2203", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:29, type:"fixed", name:"Discrete Mathematics", code:"MATH 1302", prereq:"None", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)"},
+  {o:30, type:"fixed", name:"Operating Systems 2", code:"CS 3307", prereq:"CS 2301", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:31, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #2"},
+  {o:32, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #3"},
+  {o:33, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #4"},
+  {o:34, type:"fixed", name:"Comparative Programming Languages", code:"CS 4402", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:35, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #5"},
+  {o:36, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #6"},
+  {o:37, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #7"},
+  {o:38, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #8"},
+  {o:39, type:"fixed", name:"Data Mining and Machine Learning", code:"CS 4407", prereq:"CS 3303", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:40, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #9"},
+];
+
+const CODE_TO_ORDER = {};
+PATHWAY.forEach(e=>{ if(e.type==="fixed") CODE_TO_ORDER[e.code] = e.o; });
+
+function getDefaultState(){
+  return {
+    progress: {},
+    transferDecision: {
+      1: "not-transferable", 2: "plan", 3: "plan", 4: "plan", 5: "plan",
+      6: "plan", 7: "plan", 8: "plan", 9: "plan", 10: "not-transferable",
+      11: "plan", 12: "plan", 13: "plan", 14: "plan", 15: "plan",
+      16: "plan", 17: "plan", 18: "not-transferable", 19: "plan", 20: "plan",
+      21: "plan", 22: "not-transferable", 23: "plan", 24: "plan", 25: "plan",
+      26: "not-transferable", 27: "plan", 28: "not-transferable", 29: "not-transferable", 30: "not-transferable",
+      31: "plan", 32: "plan", 33: "plan", 34: "not-transferable", 35: "plan",
+      36: "plan", 37: "plan", 38: "plan", 39: "not-transferable", 40: "plan"
+    },
+    choice: { 5: 4, 9: 0, 14: 1, 17: 0, 19: 0, 21: 1, 23: 5, 25: 0 },
+    sophiaOverride: {
+      1: "Take at UoPeople (Mandatory Residency)",
+      2: "Introduction to Information Technology",
+      3: "English Composition I",
+      4: "Introduction to Python Programming",
+      5: "Introduction to Psychology",
+      6: "Introduction to Java Programming",
+      7: "College Algebra",
+      8: "Introduction to Java Programming",
+      9: "Introduction to Ethics",
+      10: "Take at UoPeople (Direct CS Core)",
+      11: "Introduction to Statistics",
+      12: "Introduction to Relational Databases",
+      13: "Introduction to Networking",
+      14: "Environmental Science",
+      15: "Introduction to Web Development",
+      16: "Workplace Communications",
+      17: "Art History I",
+      18: "Take at UoPeople (Direct CS Core)",
+      19: "Approaches to Studying Religions",
+      20: "Software Engineering",
+      21: "Ancient Greek Philosophers",
+      22: "Take at UoPeople (Direct CS Core)",
+      23: "Introduction to Sociology",
+      24: "Project Management",
+      25: "Introduction to Business",
+      26: "Take at UoPeople (Direct CS Core)",
+      27: "Calculus I",
+      28: "Take at UoPeople (Direct CS Core)",
+      29: "Take at UoPeople (Direct CS Core)",
+      30: "Take at UoPeople (Direct CS Core)",
+      31: "Microeconomics",
+      32: "Macroeconomics",
+      33: "Financial Accounting",
+      34: "Take at UoPeople (Direct CS Core)",
+      35: "Principles of Finance",
+      36: "Personal Finance",
+      37: "Business Law",
+      38: "Organizational Behavior",
+      39: "Take at UoPeople (Direct CS Core)",
+      40: "Developing Effective Teams"
+    },
+    electiveSophiaOverrides: {},
+    freeText: {},
+    notes: {},
+    theme: "dark",
+    planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, uopFee: 180, sophiaCost: 99, scholarship: true }
+  };
+}
+
+function cloneState(state){
+  return JSON.parse(JSON.stringify(state));
+}
+
+function deepMerge(target, source){
+  if(!source || typeof source !== "object") return target;
+  if(!target || typeof target !== "object") target = {};
+  Object.keys(source).forEach(key=>{
+    const sourceValue = source[key];
+    const targetValue = target[key];
+    if(sourceValue && typeof sourceValue === "object" && !Array.isArray(sourceValue) && targetValue && typeof targetValue === "object" && !Array.isArray(targetValue)){
+      target[key] = deepMerge(targetValue, sourceValue);
+    } else {
+      target[key] = cloneState(sourceValue);
+    }
+  });
+  return target;
+}
+
+function getPlanningDefaults(){
+  return { sophiaPace:2, uopPace:2.5, termsPerYear:5, uopFee:180, sophiaCost:99, scholarship:true };
+}
+
+function mergeStateWithDefaults(stateData, defaultsData){
+  const defaults = cloneState(defaultsData || getDefaultState());
+  const state = cloneState(stateData || {});
+  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "electiveSophiaOverrides", "freeText", "notes", "planning"];
+  nestedKeys.forEach(key=>{
+    if(state[key] !== undefined){
+      defaults[key] = deepMerge(defaults[key] || {}, state[key] || {});
+    }
+  });
+  if(state.theme !== undefined) defaults.theme = state.theme;
+  if(defaults.planning && typeof defaults.planning === "object"){
+    defaults.planning = { ...getPlanningDefaults(), ...defaults.planning };
+  }
+  return defaults;
+}
+
+const STORAGE_KEY = "pathway-tracker-state-v5";
+const REMOTE_STATE_URL = "./pathway-state.json";
+let STATE = getDefaultState();
+let saveTimer = null;
+let saveAttemptToken = 0;
+let remotePersistenceAvailable = false;
+let remoteDefaults = null;
+
+function ensureStateShape(){
+  STATE.progress = STATE.progress || {};
+  STATE.transferDecision = STATE.transferDecision || {};
+  STATE.choice = STATE.choice || {};
+  STATE.sophiaOverride = STATE.sophiaOverride || {};
+  STATE.electiveSophiaOverrides = STATE.electiveSophiaOverrides || {};
+  STATE.freeText = STATE.freeText || {};
+  STATE.notes = STATE.notes || {};
+  STATE.theme = STATE.theme || "dark";
+  STATE.planning = { ...getPlanningDefaults(), ...(STATE.planning || {}) };
+  STATE.electiveMenus = STATE.electiveMenus || getDefaultElectiveMenus();
+
+  const defaults = getDefaultState();
+  Object.keys(defaults.transferDecision).forEach(o=>{
+    if(STATE.transferDecision[o] === undefined) STATE.transferDecision[o] = defaults.transferDecision[o];
+  });
+  Object.keys(defaults.sophiaOverride).forEach(o=>{
+    if(STATE.sophiaOverride[o] === undefined) STATE.sophiaOverride[o] = defaults.sophiaOverride[o];
+  });
+  Object.keys(defaults.choice).forEach(o=>{
+    if(STATE.choice[o] === undefined) STATE.choice[o] = defaults.choice[o];
+  });
+}
+
+function getDefaultElectiveMenus(){
+  return JSON.parse(JSON.stringify(ELECTIVE_MENUS));
+}
+
+function getElectiveMenuData(){
+  if(!STATE.electiveMenus || typeof STATE.electiveMenus !== "object"){
+    STATE.electiveMenus = getDefaultElectiveMenus();
+  }
+  return STATE.electiveMenus;
+}
+
+function getElectiveKey(opt){
+  return (opt.code && opt.code !== "—") ? opt.code : opt.name;
+}
+
+function getElectiveSophia(opt){
+  const key = getElectiveKey(opt);
+  if(STATE.electiveSophiaOverrides && STATE.electiveSophiaOverrides[key] !== undefined){
+    return STATE.electiveSophiaOverrides[key];
+  }
+  return opt.sophia || "";
+}
+
+function escapeHtml(str){
+  return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function loadState(){
+  try{
+    if(window.storage && window.storage.get){
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        const localPayload = JSON.parse(res.value);
+        const localState = localPayload.state || localPayload;
+        STATE = mergeStateWithDefaults(localState, localPayload.defaults || remoteDefaults || getDefaultState());
+        remotePersistenceAvailable = false;
+      }
+    } else {
+      const local = localStorage.getItem(STORAGE_KEY);
+      if(local){
+        const localPayload = JSON.parse(local);
+        const localState = localPayload.state || localPayload;
+        STATE = mergeStateWithDefaults(localState, localPayload.defaults || remoteDefaults || getDefaultState());
+        remotePersistenceAvailable = false;
+      }
+    }
+  }catch(e){ /* fallback to initial */ }
+
+  try{
+    const remoteRes = await fetch(REMOTE_STATE_URL, { cache: "no-store" });
+    if(remoteRes.ok){
+      const remoteText = await remoteRes.text();
+      if(remoteText){
+        const parsed = JSON.parse(remoteText);
+        remoteDefaults = parsed.defaults || null;
+        const persistedState = parsed.state || parsed;
+        if(!STATE || Object.keys(STATE).length <= 1 || !STATE.planning || !STATE.planning.sophiaPace){
+          STATE = mergeStateWithDefaults(persistedState, remoteDefaults || getDefaultState());
+        }
+        remotePersistenceAvailable = true;
+      }
+    }
+  }catch(e){
+    remotePersistenceAvailable = false;
+  }
+  ensureStateShape();
+}
+
+function setSyncBadge(mode){
+  const el = document.getElementById("syncBadge");
+  if(mode==="saving"){ el.className="syncbadge saving"; el.textContent="Saving..."; }
+  else if(mode==="err"){ el.className="syncbadge err"; el.textContent="Save failed - retrying"; }
+  else { el.className="syncbadge ok"; el.textContent="Synced";
+    document.getElementById("lastSaved").textContent = "Last saved " + new Date().toLocaleTimeString();
+  }
+}
+
+function queueSave(){
+  clearTimeout(saveTimer);
+  setSyncBadge("saving");
+  saveTimer = setTimeout(()=>attemptSave(4), 500);
+}
+
+async function attemptSave(retriesLeft){
+  const myToken = ++saveAttemptToken;
+  const payload = JSON.stringify({
+    defaults: remoteDefaults || getDefaultState(),
+    state: STATE
+  });
+  try{
+    if(window.storage && window.storage.set){
+      await window.storage.set(STORAGE_KEY, payload);
+    } else {
+      localStorage.setItem(STORAGE_KEY, payload);
+    }
+
+    if(remotePersistenceAvailable){
+      try {
+        const response = await fetch(REMOTE_STATE_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: payload
+        });
+        if(!response.ok){
+          console.warn("Remote save skipped:", response.status);
+        }
+      } catch(remoteErr){
+        console.warn("Remote save skipped:", remoteErr);
+      }
+    }
+
+    if(myToken !== saveAttemptToken) return;
+    setSyncBadge("ok");
+  }catch(e){
+    console.warn("Storage save failed:", e);
+    if(myToken !== saveAttemptToken) return;
+    if(retriesLeft > 0){
+      setTimeout(()=>attemptSave(retriesLeft-1), 1500 + Math.random()*1000);
+    } else {
+      setSyncBadge("err");
+      setTimeout(()=>attemptSave(2), 8000);
+    }
+  }
+}
+
+function resolveCourse(entry){
+  if(entry.type === "fixed") return entry;
+  if(entry.type === "freetext"){
+    const text = STATE.freeText[entry.o] || "";
+    return { name: text || "(not yet chosen)", code:"—", prereq:"None", cat: entry.cat, sophia:"", label:entry.label, isFreeText:true };
+  }
+  const menu = getElectiveMenuData()[entry.menu];
+  const chosenIdx = STATE.choice[entry.o] ?? 0;
+  const opt = menu.options[chosenIdx] || menu.options[0];
+  const sophiaVal = getElectiveSophia(opt);
+  return { name: opt.name, code: opt.code, prereq: opt.prereq, cat: entry.cat, sophia: sophiaVal, label:entry.label };
+}
+
+const PROGRESS_CYCLE = ["to-learn","learning","done"];
+const PROGRESS_LABEL = {"to-learn":"To learn","learning":"Learning","done":"Done"};
+const TRANSFER_CYCLE = ["undecided","transferable","plan","not-transferable"];
+const TRANSFER_LABEL = {"undecided":"Undecided","transferable":"Transferable","plan":"Plan to transfer","not-transferable":"Not transferable"};
+
+let activeFilter = "all";
+let activeTransferFilter = "all";
+let searchTerm = "";
+let hideDone = false;
+
+function getNextUpOrder(){
+  for(const entry of PATHWAY){
+    const p = STATE.progress[entry.o] || "to-learn";
+    if(p !== "done") return entry.o;
+  }
+  return null;
+}
+
+function getDuplicateElectiveOrders(){
+  const seen = {};
+  const dupes = new Set();
+  PATHWAY.filter(e=>e.menu==="majorelective").forEach(e=>{
+    const idx = STATE.choice[e.o] ?? 0;
+    if(seen[idx] !== undefined){ dupes.add(e.o); dupes.add(seen[idx]); }
+    else { seen[idx] = e.o; }
+  });
+  return dupes;
+}
+
+function renderStats(){
+  let done=0, learning=0, transferable=0, plan=0, notTransferable=0;
+  PATHWAY.forEach(entry=>{
+    const t = STATE.transferDecision[entry.o] || "undecided";
+    const p = STATE.progress[entry.o] || "to-learn";
+    if(p==="done") done++;
+    if(p==="learning") learning++;
+    if(t==="transferable") transferable++;
+    if(t==="plan") plan++;
+    if(t==="not-transferable") notTransferable++;
+  });
+  const total = PATHWAY.length;
+  const pct = Math.round((done/total)*100);
+  document.getElementById("statsRail").innerHTML = `
+    <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Courses done</div></div>
+    <div class="stat"><div class="num">${learning}</div><div class="lbl">In progress</div></div>
+    <div class="stat"><div class="num">${transferable}</div><div class="lbl">Marked transferable</div></div>
+    <div class="stat"><div class="num">${plan}</div><div class="lbl">Plan to transfer</div></div>
+    <div class="stat"><div class="num">${notTransferable}</div><div class="lbl">Marked not transferable</div></div>
+  `;
+
+  const cats = ["Major Required","Major Elective","General Elective","Gen Ed"];
+  const catHtml = cats.map(cat=>{
+    const inCat = PATHWAY.filter(e=>e.cat===cat);
+    const doneCat = inCat.filter(e=>(STATE.progress[e.o]||"to-learn")==="done").length;
+    return `<div class="cb"><div class="t">${cat}</div><div class="v">${doneCat}/${inCat.length}</div></div>`;
+  }).join("");
+  document.getElementById("catBreak").innerHTML = catHtml;
+
+  document.getElementById("progressFill").style.width = pct+"%";
+  document.getElementById("progressLabel").textContent = `${done} of ${total} completed`;
+  document.getElementById("progressPct").textContent = pct+"%";
+
+  renderPlanning();
+}
+
+function renderFilters(){
+  const cats = ["all","Major Required","Major Elective","General Elective","Gen Ed"];
+  const chipsEl = document.getElementById("filterChips");
+  chipsEl.innerHTML = "";
+  cats.forEach(cat=>{
+    const chip = document.createElement("div");
+    chip.className = "chip" + (activeFilter===cat ? " active":"");
+    chip.textContent = cat==="all" ? "All categories" : cat;
+    chip.onclick = ()=>{ activeFilter = cat; renderPathway(); renderFilters(); };
+    chipsEl.appendChild(chip);
+  });
+
+  const tCats = ["all", ...TRANSFER_CYCLE];
+  const tEl = document.getElementById("transferFilterChips");
+  tEl.innerHTML = "";
+  tCats.forEach(t=>{
+    const chip = document.createElement("div");
+    chip.className = "chip" + (activeTransferFilter===t ? " active":"");
+    chip.textContent = t==="all" ? "All transfer statuses" : TRANSFER_LABEL[t];
+    chip.onclick = ()=>{ activeTransferFilter = t; renderPathway(); renderFilters(); };
+    tEl.appendChild(chip);
+  });
+}
+
+function matchesSearch(entry, c){
+  if(!searchTerm) return true;
+  const hay = `${c.name} ${c.code} ${entry.label||""}`.toLowerCase();
+  return hay.includes(searchTerm.toLowerCase());
+}
+
+function normalizeChoiceSelections(){
+  const menus = getElectiveMenuData();
+  PATHWAY.forEach(entry=>{
+    if(entry.type !== "choice") return;
+    const menu = menus[entry.menu];
+    if(!menu || !Array.isArray(menu.options)) return;
+    const current = STATE.choice[entry.o] ?? 0;
+    if(current < 0 || current >= menu.options.length){
+      STATE.choice[entry.o] = menu.options.length ? Math.min(Math.max(0, current), menu.options.length - 1) : 0;
+    }
+  });
+}
+
+function renderPathway(){
+  const rail = document.getElementById("pathwayRail");
+  rail.innerHTML = "";
+  let anyVisible = false;
+  const nextUpOrder = getNextUpOrder();
+  const dupeOrders = getDuplicateElectiveOrders();
+
+  PATHWAY.forEach(entry=>{
+    const c = resolveCourse(entry);
+    const progress = STATE.progress[entry.o] || "to-learn";
+    const transferDecision = STATE.transferDecision[entry.o] || "undecided";
+
+    if(activeFilter!=="all" && c.cat!==activeFilter) return;
+    if(activeTransferFilter!=="all" && transferDecision!==activeTransferFilter) return;
+    if(hideDone && progress==="done") return;
+    if(!matchesSearch(entry, c)) return;
+    anyVisible = true;
+
+    const node = document.createElement("div");
+    node.className = "node" + (progress==="done"?" done":progress==="learning"?" learning":"") + (entry.o===nextUpOrder ? " nextup":"");
+
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.textContent = entry.o;
+    node.appendChild(dot);
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const left = document.createElement("div");
+    left.className = "left";
+
+    if(entry.o === nextUpOrder){
+      const tag = document.createElement("div");
+      tag.className = "nextup-tag";
+      tag.textContent = "NEXT UP";
+      left.appendChild(tag);
+    }
+
+    if(entry.type === "choice"){
+      const menu = getElectiveMenuData()[entry.menu];
+      const lbl = document.createElement("div");
+      lbl.style = "text-transform:uppercase; letter-spacing:.04em; font-size:11px; color:var(--gold); font-weight:600;";
+      lbl.textContent = entry.label;
+      left.appendChild(lbl);
+      const select = document.createElement("select");
+      select.className = "picker";
+      menu.options.forEach((opt,i)=>{
+        const o = document.createElement("option");
+        o.value = i;
+        o.textContent = `${opt.name}${opt.code!=="—" ? " ("+opt.code+")" : ""}`;
+        o.selected = (STATE.choice[entry.o] ?? 0) === i;
+        select.appendChild(o);
+      });
+      select.onchange = (e)=>{
+        STATE.choice[entry.o] = parseInt(e.target.value);
+        delete STATE.sophiaOverride[entry.o];
+        queueSave(); renderPathway(); renderStats();
+      };
+      left.appendChild(select);
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "meta";
+      metaDiv.innerHTML = `<span><b>Prereq:</b> ${c.prereq}</span>`;
+      left.appendChild(metaDiv);
+      if(entry.menu === "majorelective" && dupeOrders.has(entry.o)){
+        const warn = document.createElement("div");
+        warn.className = "warn-tag";
+        warn.textContent = "Duplicate pick — another Major Elective slot has this same course";
+        left.appendChild(warn);
+      }
+    } else if(entry.type === "freetext"){
+      const lbl = document.createElement("div");
+      lbl.style = "text-transform:uppercase; letter-spacing:.04em; font-size:11px; color:var(--gold); font-weight:600;";
+      lbl.textContent = entry.label;
+      left.appendChild(lbl);
+      const input = document.createElement("input");
+      input.className = "freetext";
+      input.placeholder = "Type the course you'll use for this slot...";
+      input.value = STATE.freeText[entry.o] || "";
+      input.oninput = (e)=>{ STATE.freeText[entry.o] = e.target.value; queueSave(); };
+      input.onblur = ()=>{ renderStats(); };
+      left.appendChild(input);
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "meta";
+      metaDiv.innerHTML = `<span><b>Prereq:</b> None</span><span>Open slot — any Gen Ed course or elective from another program</span>`;
+      left.appendChild(metaDiv);
+    } else {
+      left.innerHTML = `
+        <div class="name">${c.name}</div>
+        <div class="code mono">${c.code}</div>
+        <div class="meta"><span><b>Prereq:</b> ${c.prereq}</span></div>
+      `;
+      if(c.prereq && c.prereq !== "None" && CODE_TO_ORDER[c.prereq]){
+        const prereqOrder = CODE_TO_ORDER[c.prereq];
+        const prereqDone = (STATE.progress[prereqOrder] || "to-learn") === "done";
+        if(!prereqDone && progress !== "to-learn"){
+          const warn = document.createElement("div");
+          warn.className = "warn-tag";
+          warn.textContent = `Prerequisite ${c.prereq} isn't marked Done yet`;
+          left.appendChild(warn);
+        }
+      }
+    }
+
+    /* Editable Sophia Equivalent Field */
+    const sophiaRow = document.createElement("div");
+    sophiaRow.className = "sophia-row";
+    const currentSophiaVal = (STATE.sophiaOverride[entry.o] !== undefined) ? STATE.sophiaOverride[entry.o] : (c.sophia || "");
+    sophiaRow.innerHTML = `<span class="tag">SOPHIA</span>`;
+    const sophiaInput = document.createElement("input");
+    sophiaInput.className = "sophia-input";
+    sophiaInput.placeholder = "Enter Sophia equivalent course...";
+    sophiaInput.value = currentSophiaVal;
+    sophiaInput.oninput = (e)=>{ STATE.sophiaOverride[entry.o] = e.target.value; queueSave(); };
+    sophiaRow.appendChild(sophiaInput);
+    left.appendChild(sophiaRow);
+
+    if(entry.note){
+      const noteEl = document.createElement("div");
+      noteEl.style = "font-size:12px; color:var(--text-soft); margin-top:6px; font-style:italic;";
+      noteEl.textContent = entry.note;
+      left.appendChild(noteEl);
+    }
+
+    const notesArea = document.createElement("textarea");
+    notesArea.className = "notes";
+    notesArea.placeholder = "Personal notes...";
+    notesArea.value = STATE.notes[entry.o] || "";
+    notesArea.oninput = (e)=>{ STATE.notes[entry.o] = e.target.value; queueSave(); };
+    left.appendChild(notesArea);
+
+    card.appendChild(left);
+
+    const controls = document.createElement("div");
+    controls.className = "controls";
+
+    const statusBtn = document.createElement("button");
+    statusBtn.className = "statusbtn " + progress;
+    statusBtn.textContent = PROGRESS_LABEL[progress];
+    statusBtn.title = "Click to change study status";
+    statusBtn.onclick = ()=>{
+      const idx = PROGRESS_CYCLE.indexOf(progress);
+      STATE.progress[entry.o] = PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length];
+      queueSave(); renderPathway(); renderStats();
+    };
+    controls.appendChild(statusBtn);
+
+    const transferBtn = document.createElement("button");
+    transferBtn.className = "transferbtn " + transferDecision;
+    transferBtn.textContent = TRANSFER_LABEL[transferDecision];
+    transferBtn.title = "Click to set your transfer decision";
+    transferBtn.onclick = ()=>{
+      const idx = TRANSFER_CYCLE.indexOf(transferDecision);
+      STATE.transferDecision[entry.o] = TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length];
+      queueSave(); renderPathway(); renderStats();
+    };
+    controls.appendChild(transferBtn);
+
+    card.appendChild(controls);
+    node.appendChild(card);
+    rail.appendChild(node);
+  });
+
+  if(!anyVisible){
+    rail.innerHTML = `<div class="empty-note">No courses match your search/filter.</div>`;
+  }
+}
+
+let activeMenuKey = "all";
+let electiveSearchTerm = "";
+function optMatchesSearch(opt, categoryLabel){
+  if(!electiveSearchTerm) return true;
+  const hay = `${opt.name} ${opt.code} ${categoryLabel||""}`.toLowerCase();
+  return hay.includes(electiveSearchTerm.toLowerCase());
+}
+function menuKeys(){ return ["all", ...Object.keys(getElectiveMenuData())]; }
+function menuLabel(key){
+  if(key==="all") return "All";
+  return getElectiveMenuData()[key].label;
+}
+function renderMenuTabs(){
+  const el = document.getElementById("menuTabs");
+  el.innerHTML = "";
+  menuKeys().forEach(key=>{
+    const btn = document.createElement("div");
+    btn.className = "menu-tab-btn" + (activeMenuKey===key ? " active":"");
+    btn.textContent = menuLabel(key);
+    btn.onclick = ()=>{ activeMenuKey = key; renderMenuTabs(); renderMenuContent(); };
+    el.appendChild(btn);
+  });
+}
+
+function attachTableSophiaEvents(container){
+  container.querySelectorAll('.table-sophia-input').forEach(input=>{
+    input.addEventListener('input', (e)=>{
+      const key = e.target.dataset.key;
+      STATE.electiveSophiaOverrides[key] = e.target.value;
+      queueSave();
+    });
+    input.addEventListener('blur', ()=>{
+      renderPathway();
+    });
+  });
+}
+
+function renderMenuContent(){
+  const el = document.getElementById("menuContent");
+  const menus = getElectiveMenuData();
+
+  if(activeMenuKey === "all"){
+    let rows = "";
+    let any = false;
+    Object.entries(menus).forEach(([key, menu])=>{
+      menu.options.forEach(opt=>{
+        if(!optMatchesSearch(opt, menu.label)) return;
+        any = true;
+        const eKey = getElectiveKey(opt);
+        const sVal = getElectiveSophia(opt);
+        rows += `<tr>
+          <td>${menu.label}</td>
+          <td>${opt.name}</td>
+          <td class="mono">${opt.code}</td>
+          <td>${opt.prereq}</td>
+          <td><input type="text" class="table-sophia-input" data-key="${escapeHtml(eKey)}" value="${escapeHtml(sVal)}" placeholder="Enter Sophia course..."></td>
+        </tr>`;
+      });
+    });
+    el.innerHTML = `
+      <div class="slot-note">Every official elective and major option across all disciplines in one table. You can edit Sophia suggestions directly here.</div>
+      ${any ? `<table><thead><tr><th>Category</th><th>Option</th><th>Code</th><th>Prerequisite</th><th>Sophia Suggestion</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-note">No options match your search.</div>`}
+    `;
+    attachTableSophiaEvents(el);
+    return;
+  }
+
+  const menu = menus[activeMenuKey];
+  const filteredOpts = menu.options.filter(opt=>optMatchesSearch(opt, menu.label));
+  let rows = filteredOpts.map(opt=>{
+    const eKey = getElectiveKey(opt);
+    const sVal = getElectiveSophia(opt);
+    return `<tr>
+      <td>${opt.name}</td>
+      <td class="mono">${opt.code}</td>
+      <td>${opt.prereq}</td>
+      <td><input type="text" class="table-sophia-input" data-key="${escapeHtml(eKey)}" value="${escapeHtml(sVal)}" placeholder="Enter Sophia course..."></td>
+    </tr>`;
+  }).join("");
+  el.innerHTML = `
+    <div class="slot-note">${menu.note} You can edit Sophia suggestions directly here.</div>
+    ${filteredOpts.length ? `<table><thead><tr><th>Option</th><th>Code</th><th>Prerequisite</th><th>Sophia Suggestion</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-note">No options match your search.</div>`}
+  `;
+  attachTableSophiaEvents(el);
+}
+
+function renderElectiveManager(){
+  const menuSelect = document.getElementById("manageMenuSelect");
+  const courseSelect = document.getElementById("manageCourseSelect");
+  const nameInput = document.getElementById("manageCourseName");
+  const codeInput = document.getElementById("manageCourseCode");
+  const prereqInput = document.getElementById("manageCoursePrereq");
+  const sophiaInput = document.getElementById("manageCourseSophia");
+  if(!menuSelect || !courseSelect || !nameInput || !codeInput || !prereqInput || !sophiaInput) return;
+
+  const menus = getElectiveMenuData();
+  const selectedMenuKey = menuSelect.value && menus[menuSelect.value] ? menuSelect.value : Object.keys(menus)[0];
+  menuSelect.innerHTML = Object.entries(menus).map(([key, menu])=>`<option value="${key}">${menu.label}</option>`).join("");
+  menuSelect.value = selectedMenuKey;
+
+  const selectedCourseValue = courseSelect.value && courseSelect.value !== "new" ? courseSelect.value : "new";
+  const menu = menus[selectedMenuKey];
+  const currentIndex = selectedCourseValue === "new" ? null : Number(selectedCourseValue);
+  const options = menu.options || [];
+  courseSelect.innerHTML = options.map((opt, idx)=>`<option value="${idx}">${opt.name} (${opt.code || "—"})</option>`).join("") + `<option value="new">New course...</option>`;
+  courseSelect.value = currentIndex !== null && currentIndex >= 0 && currentIndex < options.length ? String(currentIndex) : "new";
+
+  const selectedOption = currentIndex !== null ? options[currentIndex] : null;
+  nameInput.value = selectedOption ? selectedOption.name : "";
+  codeInput.value = selectedOption ? selectedOption.code : "";
+  prereqInput.value = selectedOption ? selectedOption.prereq : "";
+  sophiaInput.value = selectedOption ? selectedOption.sophia : "";
+}
+
+function saveElectiveCourse(){
+  const menuSelect = document.getElementById("manageMenuSelect");
+  const courseSelect = document.getElementById("manageCourseSelect");
+  const menus = getElectiveMenuData();
+  const menuKey = menuSelect.value;
+  const menu = menus[menuKey];
+  if(!menu) return;
+
+  const nameInput = document.getElementById("manageCourseName");
+  const codeInput = document.getElementById("manageCourseCode");
+  const prereqInput = document.getElementById("manageCoursePrereq");
+  const sophiaInput = document.getElementById("manageCourseSophia");
+
+  const courseData = {
+    name: nameInput.value.trim() || "Untitled course",
+    code: codeInput.value.trim() || "—",
+    prereq: prereqInput.value.trim() || "None",
+    sophia: sophiaInput.value.trim() || ""
+  };
+
+  const selectedCourseValue = courseSelect.value;
+  if(selectedCourseValue === "new"){
+    menu.options.push(courseData);
+  } else {
+    const idx = Number(selectedCourseValue);
+    if(!Number.isNaN(idx) && menu.options[idx]){
+      menu.options[idx] = courseData;
+    }
+  }
+
+  STATE.electiveMenus = menus;
+  normalizeChoiceSelections();
+  queueSave();
+  renderElectiveManager();
+  renderMenuTabs();
+  renderMenuContent();
+  renderPathway();
+  renderStats();
+}
+
+function deleteElectiveCourse(){
+  const menuSelect = document.getElementById("manageMenuSelect");
+  const courseSelect = document.getElementById("manageCourseSelect");
+  const menus = getElectiveMenuData();
+  const menuKey = menuSelect.value;
+  const menu = menus[menuKey];
+  if(!menu) return;
+
+  const selectedCourseValue = courseSelect.value;
+  if(selectedCourseValue !== "new"){
+    const idx = Number(selectedCourseValue);
+    if(!Number.isNaN(idx) && menu.options[idx]){
+      menu.options.splice(idx, 1);
+    }
+  }
+
+  STATE.electiveMenus = menus;
+  normalizeChoiceSelections();
+  queueSave();
+  renderElectiveManager();
+  renderMenuTabs();
+  renderMenuContent();
+  renderPathway();
+  renderStats();
+}
+
+function clearElectiveCourseForm(){
+  document.getElementById("manageCourseName").value = "";
+  document.getElementById("manageCourseCode").value = "";
+  document.getElementById("manageCoursePrereq").value = "";
+  document.getElementById("manageCourseSophia").value = "";
+  document.getElementById("manageCourseSelect").value = "new";
+}
+
+function renderPlanning(){
+  const p = STATE.planning || getPlanningDefaults();
+  ["sophiaPace","uopPace","termsPerYear","uopFee","sophiaCost"].forEach(key=>{
+    const el = document.getElementById("in_"+key);
+    if(el && document.activeElement !== el) el.value = p[key];
+  });
+  const schEl = document.getElementById("in_scholarship");
+  if(schEl && document.activeElement !== schEl) schEl.checked = p.scholarship;
+
+  let transferring = 0;
+  PATHWAY.forEach(e=>{
+    const t = STATE.transferDecision[e.o] || "undecided";
+    if(t === "transferable" || t === "plan") transferring++;
+  });
+  const direct = PATHWAY.length - transferring;
+  const sophiaMonths = p.sophiaPace > 0 ? transferring / p.sophiaPace : 0;
+  const uopTerms = p.uopPace > 0 ? Math.ceil(direct / p.uopPace) : 0;
+  const uopMonths = p.termsPerYear > 0 ? (uopTerms / p.termsPerYear) * 12 : 0;
+  const totalMonths = sophiaMonths + uopMonths;
+
+  const sophiaCostTotal = sophiaMonths * p.sophiaCost;
+  const uopFeesTotal = p.scholarship ? 0 : direct * p.uopFee;
+  const transferFeesTotal = transferring > 20 ? (transferring - 20) * 17 : 0;
+  const totalCost = 60 + sophiaCostTotal + uopFeesTotal + transferFeesTotal;
+
+  document.getElementById("out_sophiaCount").textContent = transferring + " courses";
+  document.getElementById("out_directCount").textContent = direct + " courses";
+  document.getElementById("out_sophiaMonths").textContent = sophiaMonths.toFixed(1) + " months";
+  document.getElementById("out_uopMonths").textContent = uopMonths.toFixed(1) + " months (" + uopTerms + " terms)";
+  document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
+  document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
+}
+
+function wirePlanningInputs(){
+  [["in_sophiaPace","sophiaPace"],["in_uopPace","uopPace"],["in_termsPerYear","termsPerYear"],["in_uopFee","uopFee"],["in_sophiaCost","sophiaCost"]].forEach(([id,key])=>{
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener("input", (e)=>{
+        STATE.planning = { ...STATE.planning, [key]: parseFloat(e.target.value) || 0 };
+        queueSave(); renderPlanning();
+      });
+      el.addEventListener("change", (e)=>{
+        STATE.planning = { ...STATE.planning, [key]: parseFloat(e.target.value) || 0 };
+        queueSave(); renderPlanning();
+      });
+    }
+  });
+  const sch = document.getElementById("in_scholarship");
+  if(sch){
+    sch.addEventListener("change", (e)=>{
+      STATE.planning = { ...STATE.planning, scholarship: e.target.checked };
+      queueSave(); renderPlanning();
+    });
+  }
+}
+
+function showAlert(title, msg){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMessage').textContent = msg;
+  document.getElementById('modalActions').innerHTML = `<button class="modal-btn primary" onclick="closeModal()">OK</button>`;
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function showConfirm(title, msg, onConfirm){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMessage').textContent = msg;
+  document.getElementById('modalActions').innerHTML = `
+    <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+    <button class="modal-btn danger" id="confirmOkBtn">Confirm</button>
+  `;
+  document.getElementById('confirmOkBtn').onclick = ()=>{ closeModal(); onConfirm(); };
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').style.display = 'none';
+}
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    ["pathway","electives","planning"].forEach(name=>{
+      document.getElementById("tab-"+name).style.display = (name===tab.dataset.tab) ? "block":"none";
+    });
+    if(tab.dataset.tab === "planning") renderPlanning();
+    if(tab.dataset.tab === "electives") renderMenuContent();
+  };
+});
+
+document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTerm = e.target.value; renderPathway(); });
+document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
+document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
+
+document.getElementById("manageMenuSelect").addEventListener("change", ()=>{ renderElectiveManager(); });
+document.getElementById("manageCourseSelect").addEventListener("change", ()=>{ renderElectiveManager(); });
+document.getElementById("saveElectiveCourseBtn").addEventListener("click", saveElectiveCourse);
+document.getElementById("deleteElectiveCourseBtn").addEventListener("click", deleteElectiveCourse);
+document.getElementById("clearElectiveCourseBtn").addEventListener("click", clearElectiveCourseForm);
+
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", STATE.theme);
+  document.getElementById("themeToggleBtn").textContent = STATE.theme === "dark" ? "Light mode" : "Dark mode";
+}
+document.getElementById("themeToggleBtn").addEventListener("click", ()=>{
+  STATE.theme = STATE.theme === "dark" ? "light" : "dark";
+  applyTheme(); queueSave();
+});
+
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "learning-pathway-backup.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("importBtn").addEventListener("click", ()=>{
+  document.getElementById("importFileInput").click();
+});
+
+document.getElementById("importFileInput").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      STATE = parsed;
+      ensureStateShape();
+      applyTheme();
+      queueSave(); renderAll();
+      showAlert("Import Successful", "Your pathway state has been restored.");
+    }catch(err){
+      showAlert("Import Error", "The selected file is not a valid JSON backup.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+function renderAll(){
+  renderStats();
+  renderFilters();
+  renderPathway();
+  renderMenuTabs();
+  renderMenuContent();
+  renderElectiveManager();
+}
+
+(async function init(){
+  await loadState();
+  applyTheme();
+  wirePlanningInputs();
+  renderAll();
+})();
+</script>
+</body>
+</html>
