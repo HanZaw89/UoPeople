@@ -187,6 +187,8 @@
       <div class="lastsaved" id="lastSaved">Not saved yet</div>
       <div class="headerBtns">
         <button class="iconbtn" id="themeToggleBtn">Light mode</button>
+        <button class="iconbtn" id="undoBtn" title="Undo (Ctrl+Z)" disabled>Undo</button>
+        <button class="iconbtn" id="redoBtn" title="Redo (Ctrl+Y)" disabled>Redo</button>
         <button class="iconbtn" id="exportBtn">Export</button>
         <button class="iconbtn" id="importBtn">Import</button>
       </div>
@@ -695,6 +697,8 @@ function setSyncBadge(mode){
 
 function queueSave(){
   clearTimeout(saveTimer);
+  // record to history before saving (if different)
+  pushSnapshotIfDifferent();
   setSyncBadge("saving");
   saveTimer = setTimeout(()=>attemptSave(4), 500);
 }
@@ -1057,6 +1061,54 @@ function renderPathway(){
 
 let activeMenuKey = "all";
 let electiveSearchTerm = "";
+// Undo / Redo history
+let HISTORY = [];
+let HISTORY_INDEX = -1;
+let HISTORY_SUPPRESS = false;
+let LAST_SNAPSHOT = null;
+
+function pushSnapshotIfDifferent(){
+  if(HISTORY_SUPPRESS) return;
+  try{
+    const snap = JSON.stringify(STATE);
+    if(snap === LAST_SNAPSHOT) return;
+    // trim redo entries
+    if(HISTORY_INDEX < HISTORY.length - 1) HISTORY = HISTORY.slice(0, HISTORY_INDEX+1);
+    HISTORY.push(cloneState(STATE));
+    HISTORY_INDEX = HISTORY.length - 1;
+    LAST_SNAPSHOT = snap;
+    updateUndoRedoButtons();
+  }catch(e){ console.warn('history push failed', e); }
+}
+
+function updateUndoRedoButtons(){
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if(u) u.disabled = HISTORY_INDEX <= 0;
+  if(r) r.disabled = HISTORY_INDEX >= HISTORY.length - 1;
+}
+
+function doUndo(){
+  if(HISTORY_INDEX <= 0) return;
+  HISTORY_SUPPRESS = true;
+  HISTORY_INDEX--;
+  STATE = cloneState(HISTORY[HISTORY_INDEX]);
+  LAST_SNAPSHOT = JSON.stringify(STATE);
+  applyTheme(); renderAll(); queueSave();
+  HISTORY_SUPPRESS = false;
+  updateUndoRedoButtons();
+}
+
+function doRedo(){
+  if(HISTORY_INDEX >= HISTORY.length - 1) return;
+  HISTORY_SUPPRESS = true;
+  HISTORY_INDEX++;
+  STATE = cloneState(HISTORY[HISTORY_INDEX]);
+  LAST_SNAPSHOT = JSON.stringify(STATE);
+  applyTheme(); renderAll(); queueSave();
+  HISTORY_SUPPRESS = false;
+  updateUndoRedoButtons();
+}
 function optMatchesSearch(opt, categoryLabel){
   if(!electiveSearchTerm) return true;
   const hay = `${opt.name} ${opt.code} ${categoryLabel||""}`.toLowerCase();
@@ -1616,6 +1668,15 @@ document.getElementById("themeToggleBtn").addEventListener("click", ()=>{
   applyTheme(); queueSave();
 });
 
+document.getElementById('undoBtn').addEventListener('click', ()=>{ doUndo(); });
+document.getElementById('redoBtn').addEventListener('click', ()=>{ doRedo(); });
+
+// keyboard shortcuts
+document.addEventListener('keydown', (e)=>{
+  if((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z'){ e.preventDefault(); doUndo(); }
+  if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))){ e.preventDefault(); doRedo(); }
+});
+
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const blob = new Blob([JSON.stringify(STATE, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -1667,6 +1728,11 @@ function renderAll(){
   applyTheme();
   wirePlanningInputs();
   renderAll();
+  // initialize history with current state
+  LAST_SNAPSHOT = JSON.stringify(STATE);
+  HISTORY = [ cloneState(STATE) ];
+  HISTORY_INDEX = 0;
+  updateUndoRedoButtons();
 })();
 </script>
 </body>
