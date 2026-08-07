@@ -128,6 +128,7 @@
   .overview-card .small-progress{height:10px; border-radius:6px; background:var(--slate-soft); overflow:hidden; margin-top:10px;}
   .overview-card .small-progress > div{height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .4s ease;}
   @media (max-width:900px){ .overview-cards{grid-template-columns:1fr;} }
+  .node.highlight { outline:3px solid rgba(217,169,78,0.9); box-shadow:0 6px 24px rgba(217,169,78,0.08); }
   .menu-tab-btn{padding:9px 15px; border-radius:9px; border:1px solid var(--line); background:var(--card); font-size:13px; font-weight:600; cursor:pointer; color:var(--text-soft);}
   .menu-tab-btn.active{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
   table{width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; border:1px solid var(--line);}
@@ -219,7 +220,13 @@
         <button class="iconbtn" id="resetCategoryOverridesBtn">Reset category overrides</button>
         <div style="color:var(--text-soft); font-size:13px; margin-left:8px;">Official breakdown: Major 20 · Electives 10 · General Education 10</div>
       </div>
-      <div id="coursesList"></div>
+      <div style="margin-bottom:12px; display:flex; gap:8px;">
+        <button class="menu-tab-btn" id="officialBtnMajor" data-key="major">Official Major (20)</button>
+        <button class="menu-tab-btn" id="officialBtnElective" data-key="elective">Official Electives (10)</button>
+        <button class="menu-tab-btn" id="officialBtnGenEd" data-key="gened">Official General Education (10)</button>
+      </div>
+      <div id="officialCoursesList"></div>
+      <div id="coursesList" style="margin-top:14px;"></div>
     </div>
   </div>
 
@@ -905,6 +912,7 @@ function renderPathway(){
 
     const node = document.createElement("div");
     node.className = "node" + (progress==="done"?" done":progress==="learning"?" learning":"") + (entry.o===nextUpOrder ? " nextup":"");
+    node.id = 'node-'+entry.o;
 
     const dot = document.createElement("div");
     dot.className = "dot";
@@ -1215,32 +1223,44 @@ function renderMenuContent(){
 function renderCourseOverview(){
   const container = document.getElementById('coursesOverview');
   if(!container) return;
-  const makeStats = (catLabel)=>{
-    const total = PATHWAY.filter(e=>getEffectiveCategory(e)===catLabel).length;
-    const done = PATHWAY.filter(e=>getEffectiveCategory(e)===catLabel && (STATE.progress[e.o]||'to-learn')==='done').length;
+  // Official mapping based on the provided learning pathway images
+  function getOfficialType(entry){
+    // major elective explicit slots
+    if(entry.menu === 'majorelective' || entry.cat === 'Major Elective') return 'elective';
+    // general education menus
+    if(['socbehav','ethics','natsci','humanities','civilization','generalelective'].includes(entry.menu) || entry.cat === 'Gen Ed' || entry.cat === 'General Elective') return 'gened';
+    // majormodules and CS-coded fixed courses map to major required
+    if(entry.menu === 'majormodules' || (entry.code && String(entry.code).startsWith('CS')) || entry.cat === 'Major Required') return 'major';
+    // fallback to major
+    return 'major';
+  }
+
+  const makeStats = (kind)=>{
+    const total = PATHWAY.filter(e=>getOfficialType(e)===kind).length;
+    const done = PATHWAY.filter(e=>getOfficialType(e)===kind && (STATE.progress[e.o]||'to-learn')==='done').length;
     const pct = total ? Math.round((done/total)*100) : 0;
     return { total, done, pct };
   };
-  const major = makeStats('Major Required');
-  const electives = makeStats('Major Elective');
-  const gened = makeStats('Gen Ed');
+  const major = makeStats('major');
+  const electives = makeStats('elective');
+  const gened = makeStats('gened');
 
   container.innerHTML = `
-    <div class="overview-card" data-cat="Major Required" title="View Major Required courses">
+    <div class="overview-card" data-kind="major" title="View Major Required courses">
       <div class="title">Major Required</div>
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${major.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${major.done} Courses</span></div>
       <div class="small-progress"><div style="width:${major.pct}%"></div></div>
     </div>
-    <div class="overview-card" data-cat="Major Elective" title="View Major Electives">
+    <div class="overview-card" data-kind="elective" title="View Major Electives">
       <div class="title">Electives</div>
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${electives.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${electives.done} Courses</span></div>
       <div class="small-progress"><div style="width:${electives.pct}%"></div></div>
     </div>
-    <div class="overview-card" data-cat="Gen Ed" title="View General Education">
+    <div class="overview-card" data-kind="gened" title="View General Education">
       <div class="title">General Education</div>
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${gened.total}</div>
@@ -1252,8 +1272,8 @@ function renderCourseOverview(){
   container.querySelectorAll('.overview-card').forEach(card=>{
     card.style.cursor = 'pointer';
     card.addEventListener('click', ()=>{
-      const cat = card.dataset.cat;
-      // switch to pathway tab and set filter
+      const kind = card.dataset.kind;
+      // switch to pathway tab
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
       if(pathwayTab) pathwayTab.classList.add('active');
@@ -1261,14 +1281,19 @@ function renderCourseOverview(){
         const el = document.getElementById('tab-'+name);
         if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
       });
-      activeFilter = cat;
-      renderFilters();
-      renderPathway();
-      // also render full list in courses manager
-      renderCoursesList(cat);
+      // render official list in courses manager
+      renderOfficialList(kind);
     });
   });
 }
+
+// wire official category buttons
+document.getElementById('officialBtnMajor').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.add('active'); document.getElementById('officialBtnElective').classList.remove('active'); document.getElementById('officialBtnGenEd').classList.remove('active'); renderOfficialList('major'); });
+document.getElementById('officialBtnElective').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.remove('active'); document.getElementById('officialBtnElective').classList.add('active'); document.getElementById('officialBtnGenEd').classList.remove('active'); renderOfficialList('elective'); });
+document.getElementById('officialBtnGenEd').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.remove('active'); document.getElementById('officialBtnElective').classList.remove('active'); document.getElementById('officialBtnGenEd').classList.add('active'); renderOfficialList('gened'); });
+
+// default select major when courses tab opens
+document.querySelectorAll('.tab').forEach(tab=>{ tab.addEventListener('click', ()=>{ if(tab.dataset.tab==='courses'){ document.getElementById('officialBtnMajor').click(); } }); });
 
 function getEffectiveCategory(entry){
   const overrides = STATE.courseCategoryOverride || {};
@@ -1335,6 +1360,76 @@ function renderCoursesList(filterCat){
   container.querySelectorAll('.freetext').forEach(inp=>{ inp.addEventListener('input',(e)=>{ STATE.freeText[Number(e.dataset.order)] = e.target.value; queueSave(); }); });
   container.querySelectorAll('.statusbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const p=STATE.progress[ord]||'to-learn'; const idx = PROGRESS_CYCLE.indexOf(p); STATE.progress[ord]=PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
   container.querySelectorAll('.transferbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const t=STATE.transferDecision[ord]||'undecided'; const idx=TRANSFER_CYCLE.indexOf(t); STATE.transferDecision[ord]=TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
+}
+
+function renderOfficialList(kind){
+  const container = document.getElementById('officialCoursesList');
+  if(!container) return;
+  // map to official key
+  function getOfficialType(entry){
+    if(entry.menu === 'majorelective' || entry.cat === 'Major Elective') return 'elective';
+    if(['socbehav','ethics','natsci','humanities','civilization','generalelective'].includes(entry.menu) || entry.cat === 'Gen Ed' || entry.cat === 'General Elective') return 'gened';
+    if(entry.menu === 'majormodules' || (entry.code && String(entry.code).startsWith('CS')) || entry.cat === 'Major Required') return 'major';
+    return 'major';
+  }
+
+  const rows = PATHWAY.filter(e=>getOfficialType(e)===kind).map(entry=>{
+    const c = resolveCourse(entry);
+    return `<div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+      <div style="flex:1;">
+        <div style="font-weight:700">#${entry.o} — ${escapeHtml(c.name || entry.label || '(not chosen)')}</div>
+        <div style="color:var(--text-soft); margin-top:6px;">${escapeHtml(c.code || '—')} · Prereq: ${escapeHtml(c.prereq || 'None')}</div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="iconbtn" data-order="${entry.o}" data-action="open-pathway">Open in Pathway</button>
+        <button class="iconbtn" data-order="${entry.o}" data-action="manage">Manage</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = rows || `<div class="empty-note">No courses found for this official category.</div>`;
+
+  container.querySelectorAll('button[data-action=open-pathway]').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      const ord = Number(e.target.dataset.order);
+      // switch to pathway tab
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
+      if(pathwayTab) pathwayTab.classList.add('active');
+      ["pathway","electives","planning","courses"].forEach(name=>{
+        const el = document.getElementById('tab-'+name);
+        if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
+      });
+      // render pathway and scroll to node
+      renderPathway();
+      setTimeout(()=>{
+        const el = document.getElementById('node-'+ord);
+        if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.add('highlight'); setTimeout(()=>el.classList.remove('highlight'), 2200); }
+      }, 120);
+    });
+  });
+
+  container.querySelectorAll('button[data-action=manage]').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      const ord = Number(e.target.dataset.order);
+      // open courses manager and focus item by calling renderCoursesList of the effective category
+      const effCat = getEffectiveCategory(PATHWAY.find(p=>p.o===ord));
+      // switch to courses tab
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      const coursesTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='courses');
+      if(coursesTab) coursesTab.classList.add('active');
+      ["pathway","electives","planning","courses"].forEach(name=>{
+        const el = document.getElementById('tab-'+name);
+        if(el) el.style.display = (name==='courses') ? 'block' : 'none';
+      });
+      renderCoursesList(effCat);
+      // try to focus the item in coursesList by scrolling to the card containing it
+      setTimeout(()=>{
+        const card = document.querySelector('#coursesList .card [data-order="'+ord+'"]');
+        if(card && card.scrollIntoView) card.scrollIntoView({behavior:'smooth', block:'center'});
+      },120);
+    });
+  });
 }
 
 function autoOrganizeToOfficial(){
