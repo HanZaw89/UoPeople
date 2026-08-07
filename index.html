@@ -1235,11 +1235,14 @@ function renderCourseOverview(){
     return 'major';
   }
 
+  const OFFICIAL_TARGETS = { major: 20, elective: 10, gened: 10 };
   const makeStats = (kind)=>{
-    const total = PATHWAY.filter(e=>getOfficialType(e)===kind).length;
+    const mappedCount = PATHWAY.filter(e=>getOfficialType(e)===kind).length;
     const done = PATHWAY.filter(e=>getOfficialType(e)===kind && (STATE.progress[e.o]||'to-learn')==='done').length;
-    const pct = total ? Math.round((done/total)*100) : 0;
-    return { total, done, pct };
+    // display progress against official target, but still know how many mapped
+    const target = OFFICIAL_TARGETS[kind] || mappedCount || 0;
+    const pct = target ? Math.round((done/target)*100) : 0;
+    return { total: target, mapped: mappedCount, done, pct };
   };
   const major = makeStats('major');
   const electives = makeStats('elective');
@@ -1251,21 +1254,21 @@ function renderCourseOverview(){
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${major.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${major.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${major.pct}%"></div></div>
+      <div class="small-progress"><div style="width:${Math.min(100, major.pct)}%"></div></div>
     </div>
     <div class="overview-card" data-kind="elective" title="View Major Electives">
       <div class="title">Electives</div>
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${electives.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${electives.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${electives.pct}%"></div></div>
+      <div class="small-progress"><div style="width:${Math.min(100, electives.pct)}%"></div></div>
     </div>
     <div class="overview-card" data-kind="gened" title="View General Education">
       <div class="title">General Education</div>
       <div class="subtitle">Total Courses Required</div>
       <div class="bignum">${gened.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${gened.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${gened.pct}%"></div></div>
+      <div class="small-progress"><div style="width:${Math.min(100, gened.pct)}%"></div></div>
     </div>
   `;
 
@@ -1273,6 +1276,10 @@ function renderCourseOverview(){
     card.style.cursor = 'pointer';
     card.addEventListener('click', ()=>{
       const kind = card.dataset.kind;
+      // sync active state to the official buttons
+      document.getElementById('officialBtnMajor').classList.toggle('active', kind==='major');
+      document.getElementById('officialBtnElective').classList.toggle('active', kind==='elective');
+      document.getElementById('officialBtnGenEd').classList.toggle('active', kind==='gened');
       // switch to pathway tab
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
