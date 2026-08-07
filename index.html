@@ -117,6 +117,17 @@
   button.transferbtn:hover{filter:brightness(1.15);}
 
   .menu-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
+
+  /* Courses overview cards (three-up) */
+  .overview-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:8px 0 22px;}
+  .overview-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px 20px; text-align:center;}
+  .overview-card .title{font-weight:700; font-size:18px; color:var(--text); margin-bottom:6px;}
+  .overview-card .subtitle{font-size:13px; color:var(--text-soft); margin-bottom:8px;}
+  .overview-card .bignum{font-family:'Fraunces', serif; font-size:64px; font-weight:700; color:var(--text); margin:6px 0;}
+  .overview-card .progress-caption{display:flex; justify-content:space-between; font-size:13px; color:var(--text-soft); margin-top:12px;}
+  .overview-card .small-progress{height:10px; border-radius:6px; background:var(--slate-soft); overflow:hidden; margin-top:10px;}
+  .overview-card .small-progress > div{height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .4s ease;}
+  @media (max-width:900px){ .overview-cards{grid-template-columns:1fr;} }
   .menu-tab-btn{padding:9px 15px; border-radius:9px; border:1px solid var(--line); background:var(--card); font-size:13px; font-weight:600; cursor:pointer; color:var(--text-soft);}
   .menu-tab-btn.active{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
   table{width:100%; border-collapse:collapse; background:var(--card); border-radius:12px; overflow:hidden; border:1px solid var(--line);}
@@ -190,8 +201,16 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="pathway">Pathway</div>
+    <div class="tab" data-tab="courses">Courses</div>
     <div class="tab" data-tab="electives">Elective Menus</div>
     <div class="tab" data-tab="planning">Planning</div>
+  </div>
+
+  <div id="tab-courses" style="display:none;">
+    <div class="toolbar" style="margin-bottom:6px;">
+      <div style="flex:1; font-weight:700; font-size:18px;">Course overview</div>
+    </div>
+    <div class="overview-cards" id="coursesOverview"></div>
   </div>
 
   <div id="tab-pathway">
@@ -1133,6 +1152,62 @@ function renderMenuContent(){
   attachTableSophiaEvents(el);
 }
 
+function renderCourseOverview(){
+  const container = document.getElementById('coursesOverview');
+  if(!container) return;
+  const makeStats = (catLabel)=>{
+    const total = PATHWAY.filter(e=>e.cat===catLabel).length;
+    const done = PATHWAY.filter(e=>e.cat===catLabel && (STATE.progress[e.o]||'to-learn')==='done').length;
+    const pct = total ? Math.round((done/total)*100) : 0;
+    return { total, done, pct };
+  };
+  const major = makeStats('Major Required');
+  const electives = makeStats('Major Elective');
+  const gened = makeStats('Gen Ed');
+
+  container.innerHTML = `
+    <div class="overview-card" data-cat="Major Required" title="View Major Required courses">
+      <div class="title">Major Required</div>
+      <div class="subtitle">Total Courses Required</div>
+      <div class="bignum">${major.total}</div>
+      <div class="progress-caption"><span>Progress</span><span>${major.done} Courses</span></div>
+      <div class="small-progress"><div style="width:${major.pct}%"></div></div>
+    </div>
+    <div class="overview-card" data-cat="Major Elective" title="View Major Electives">
+      <div class="title">Electives</div>
+      <div class="subtitle">Total Courses Required</div>
+      <div class="bignum">${electives.total}</div>
+      <div class="progress-caption"><span>Progress</span><span>${electives.done} Courses</span></div>
+      <div class="small-progress"><div style="width:${electives.pct}%"></div></div>
+    </div>
+    <div class="overview-card" data-cat="Gen Ed" title="View General Education">
+      <div class="title">General Education</div>
+      <div class="subtitle">Total Courses Required</div>
+      <div class="bignum">${gened.total}</div>
+      <div class="progress-caption"><span>Progress</span><span>${gened.done} Courses</span></div>
+      <div class="small-progress"><div style="width:${gened.pct}%"></div></div>
+    </div>
+  `;
+
+  container.querySelectorAll('.overview-card').forEach(card=>{
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', ()=>{
+      const cat = card.dataset.cat;
+      // switch to pathway tab and set filter
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
+      if(pathwayTab) pathwayTab.classList.add('active');
+      ["pathway","electives","planning","courses"].forEach(name=>{
+        const el = document.getElementById('tab-'+name);
+        if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
+      });
+      activeFilter = cat;
+      renderFilters();
+      renderPathway();
+    });
+  });
+}
+
 function renderElectiveManager(){
   const menuSelect = document.getElementById("manageMenuSelect");
   const courseSelect = document.getElementById("manageCourseSelect");
@@ -1347,11 +1422,13 @@ document.querySelectorAll(".tab").forEach(tab=>{
   tab.onclick = ()=>{
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
     tab.classList.add("active");
-    ["pathway","electives","planning"].forEach(name=>{
-      document.getElementById("tab-"+name).style.display = (name===tab.dataset.tab) ? "block":"none";
+    ["pathway","electives","planning","courses"].forEach(name=>{
+      const el = document.getElementById("tab-"+name);
+      if(el) el.style.display = (name===tab.dataset.tab) ? "block":"none";
     });
     if(tab.dataset.tab === "planning") renderPlanning();
     if(tab.dataset.tab === "electives") renderMenuContent();
+    if(tab.dataset.tab === "courses") renderCourseOverview();
   };
 });
 
@@ -1417,6 +1494,7 @@ function renderAll(){
   renderMenuTabs();
   renderMenuContent();
   renderElectiveManager();
+  renderCourseOverview();
 }
 
 (async function init(){
