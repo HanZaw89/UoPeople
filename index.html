@@ -1290,42 +1290,82 @@ function autoOrganizeToOfficial(){
   const TARGET = { 'Major Required':20, 'Major Elective':10, 'Gen Ed':10 };
   STATE.courseCategoryOverride = STATE.courseCategoryOverride || {};
 
-  // compute current pools
-  const entries = PATHWAY.map(e=>({ ...e, effective: getEffectiveCategory(e) }));
-  // find movable entries (choices and general elective slots and major elective slots)
-  const movable = entries.filter(e=> e.type==='choice' || e.cat==='Major Elective' || e.cat==='General Elective' || e.cat==='Gen Ed');
+  // We'll use the PATHWAY canonical categories as the baseline (entry.cat)
+  const entries = PATHWAY.map(e=>({ ...e }));
 
-  // start with fixed assignments for non-movable
+  // Mark unmovable entries: fixed major-required cores and explicitly proctored/direct-UoPeople items
+  const unmovable = new Set();
+  entries.forEach(e=>{
+    if(e.type === 'fixed' && e.cat === 'Major Required') unmovable.add(e.o);
+    if(e.note && String(e.note).toLowerCase().includes('proctored')) unmovable.add(e.o);
+    if(e.sophia && String(e.sophia).toLowerCase().includes('take at uopeople')) unmovable.add(e.o);
+  });
+
+  // Start with assigned = original category
   const assigned = {};
-  entries.forEach(e=>{ if(!movable.includes(e)) assigned[e.o]=getEffectiveCategory(e); });
+  entries.forEach(e=>{ assigned[e.o] = e.cat; });
 
-  // helper to count current assigned
   function countsFromAssigned(){ const c={'Major Required':0,'Major Elective':0,'Gen Ed':0,'General Elective':0}; Object.values(assigned).forEach(v=>{ if(c[v]!==undefined) c[v]++; }); return c; }
 
-  // assign movable entries to meet TARGET preferring their original category
-  movable.forEach(e=>{ assigned[e.o]=getEffectiveCategory(e); });
-
-  // adjust until matches TARGET for Major Required, Major Elective, Gen Ed
   let counts = countsFromAssigned();
-  // Helper list of movable ids
-  const movableIds = movable.map(m=>m.o);
 
-  // prioritize moving entries that are currently in categories that exceed targets
-  const categories = ['Major Required','Major Elective','Gen Ed'];
-  categories.forEach(cat=>{
-    while(counts[cat] > (TARGET[cat]||0)){
-      // find a movable entry in this cat to move to a category that is under target
-      const under = categories.find(c=>counts[c] < (TARGET[c]||0));
-      if(!under) break;
-      const candidate = movable.find(m=> assigned[m.o]===cat && !categories.includes(m.cat) ? false : assigned[m.o]===cat);
-      if(!candidate) break;
-      assigned[candidate.o] = under;
+  // Candidate pool: movable entries (not unmovable)
+  const candidates = entries.filter(e=>!unmovable.has(e.o));
+
+  // Helper: score a candidate for assigning to targetCat
+  function scoreCandidate(e, targetCat){
+    let score = 0;
+    if(e.type === 'choice') score += 30; // very movable
+    if(e.menu === 'majorelective' && targetCat === 'Major Elective') score += 20;
+    if(e.menu === 'generalelective' && (targetCat === 'Gen Ed' || targetCat === 'General Elective')) score += 12;
+    if(e.cat === targetCat) score += 10; // already in desired group
+    if(e.cat === 'Major Required' && targetCat !== 'Major Required') score -= 50; // avoid moving core major out
+    if(e.note && String(e.note).toLowerCase().includes('take at uopeople')) score -= 20;
+    return score;
+  }
+
+  const targetCats = ['Major Required','Major Elective','Gen Ed'];
+  // First, try to fill categories that are under target by selecting best-scoring candidates
+  targetCats.forEach(targetCat=>{
+    while((counts[targetCat] || 0) < (TARGET[targetCat] || 0)){
+      // pick best candidate not already assigned to the targetCat
+      let best = null; let bestScore = -Infinity;
+      for(const e of candidates){
+        if(assigned[e.o] === targetCat) continue;
+        const s = scoreCandidate(e, targetCat);
+        if(s > bestScore){ bestScore = s; best = e; }
+      }
+      if(!best || bestScore < -10) break; // no suitable candidate
+      assigned[best.o] = targetCat;
       counts = countsFromAssigned();
     }
   });
 
-  // write overrides
-  Object.keys(assigned).forEach(k=>{ const ord = Number(k); const orig = PATHWAY.find(e=>e.o===ord); if(orig && assigned[k] !== orig.cat) STATE.courseCategoryOverride[ord]=assigned[k]; else if(STATE.courseCategoryOverride && STATE.courseCategoryOverride[ord]) delete STATE.courseCategoryOverride[ord]; });
+  // If any category is still over target, move excess from least preferred candidates
+  targetCats.forEach(targetCat=>{
+    while((counts[targetCat] || 0) > (TARGET[targetCat] || 0)){
+      // find a candidate currently in this cat that is movable and has low score for this cat
+      const pool = candidates.filter(e=>assigned[e.o] === targetCat);
+      if(!pool.length) break;
+      pool.sort((a,b)=> scoreCandidate(a,targetCat) - scoreCandidate(b,targetCat));
+      const toMove = pool[0];
+      // pick another category that is under target or least filled
+      const under = targetCats.find(c=> (counts[c] || 0) < (TARGET[c] || 0));
+      const dest = under || targetCats.find(c=>c!==targetCat);
+      if(!dest) break;
+      assigned[toMove.o] = dest;
+      counts = countsFromAssigned();
+    }
+  });
+
+  // Persist overrides where assigned differs from original
+  Object.keys(assigned).forEach(k=>{
+    const ord = Number(k);
+    const orig = PATHWAY.find(e=>e.o===ord);
+    if(orig && assigned[k] !== orig.cat) STATE.courseCategoryOverride[ord] = assigned[k];
+    else if(STATE.courseCategoryOverride && STATE.courseCategoryOverride[ord]) delete STATE.courseCategoryOverride[ord];
+  });
+
   queueSave(); renderCourseOverview(); renderCoursesList('Major Required');
 }
 
