@@ -214,19 +214,16 @@
       <div style="flex:1; font-weight:700; font-size:18px;">Course overview</div>
     </div>
     <div class="overview-cards" id="coursesOverview"></div>
+    <div class="slot-note" style="margin-bottom:14px;">
+      <strong>Official UoPeople structure:</strong> this view uses the broader degree categories only — Major, Electives, and General Education — with the official 20 / 10 / 10 balance.
+    </div>
     <div id="coursesManager" style="margin-top:8px;">
-      <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
-        <button class="iconbtn" id="autoOrganizeBtn">Auto-organize to official counts</button>
-        <button class="iconbtn" id="resetCategoryOverridesBtn">Reset category overrides</button>
-        <div style="color:var(--text-soft); font-size:13px; margin-left:8px;">Official breakdown: Major 20 · Electives 10 · General Education 10</div>
+      <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="menu-tab-btn active" id="courseCategoryBtnMajor" data-key="major">Major (20)</button>
+        <button class="menu-tab-btn" id="courseCategoryBtnElective" data-key="elective">Electives (10)</button>
+        <button class="menu-tab-btn" id="courseCategoryBtnGenEd" data-key="gened">General Education (10)</button>
       </div>
-      <div style="margin-bottom:12px; display:flex; gap:8px;">
-        <button class="menu-tab-btn" id="officialBtnMajor" data-key="major">Official Major (20)</button>
-        <button class="menu-tab-btn" id="officialBtnElective" data-key="elective">Official Electives (10)</button>
-        <button class="menu-tab-btn" id="officialBtnGenEd" data-key="gened">Official General Education (10)</button>
-      </div>
-      <div id="officialCoursesList"></div>
-      <div id="coursesList" style="margin-top:14px;"></div>
+      <div id="courseCategoryList"></div>
     </div>
   </div>
 
@@ -319,6 +316,25 @@
       <h3 id="modalTitle">Notice</h3>
       <p id="modalMessage"></p>
       <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div id="courseManageOverlay" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <h3 id="courseManageTitle">Manage course</h3>
+      <div id="courseManageMeta" class="slot-note" style="margin-bottom:14px;"></div>
+      <div class="inputrow" style="flex-direction:column; align-items:flex-start; gap:6px; margin-bottom:10px;">
+        <label for="courseManageSophia" style="font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">Suggested Sophia course</label>
+        <input id="courseManageSophia" class="freetext" style="margin-top:0;">
+      </div>
+      <div class="inputrow" style="flex-direction:column; align-items:flex-start; gap:6px; margin-bottom:10px;">
+        <label for="courseManageNote" style="font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">Personal note</label>
+        <textarea id="courseManageNote" class="notes" style="min-height:86px; margin-top:0;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" id="courseManageCancelBtn">Cancel</button>
+        <button class="modal-btn primary" id="courseManageSaveBtn">Save</button>
+      </div>
     </div>
   </div>
 
@@ -1220,52 +1236,66 @@ function renderMenuContent(){
   attachTableSophiaEvents(el);
 }
 
+let currentCourseCategory = 'major';
+
+function getBroadCategory(entry){
+  const override = STATE.courseCategoryOverride && STATE.courseCategoryOverride[entry.o];
+  if(override && ['major','elective','gened'].includes(override)) return override;
+
+  const majorOrders = new Set([2,4,6,8,10,12,13,15,18,20,22,24,26,28,29,30,31,32,34,39]);
+  const electiveOrders = new Set([5,9,14,25,33,35,36,37,38,40]);
+
+  if(majorOrders.has(entry.o)) return 'major';
+  if(electiveOrders.has(entry.o)) return 'elective';
+  return 'gened';
+}
+
+function getCategoryLabel(kind){
+  return kind === 'major' ? 'Major' : kind === 'elective' ? 'Electives' : 'General Education';
+}
+
+function setActiveCourseCategoryButton(kind){
+  ['major','elective','gened'].forEach(key=>{
+    const btn = document.getElementById('courseCategoryBtn' + (key==='major' ? 'Major' : key==='elective' ? 'Elective' : 'GenEd'));
+    if(btn) btn.classList.toggle('active', key===kind);
+  });
+}
+
 function renderCourseOverview(){
   const container = document.getElementById('coursesOverview');
   if(!container) return;
-  // Official mapping based on the provided learning pathway images
-  function getOfficialType(entry){
-    // major elective explicit slots
-    if(entry.menu === 'majorelective' || entry.cat === 'Major Elective') return 'elective';
-    // general education menus
-    if(['socbehav','ethics','natsci','humanities','civilization','generalelective'].includes(entry.menu) || entry.cat === 'Gen Ed' || entry.cat === 'General Elective') return 'gened';
-    // majormodules and CS-coded fixed courses map to major required
-    if(entry.menu === 'majormodules' || (entry.code && String(entry.code).startsWith('CS')) || entry.cat === 'Major Required') return 'major';
-    // fallback to major
-    return 'major';
-  }
 
   const OFFICIAL_TARGETS = { major: 20, elective: 10, gened: 10 };
   const makeStats = (kind)=>{
-    const mappedCount = PATHWAY.filter(e=>getOfficialType(e)===kind).length;
-    const done = PATHWAY.filter(e=>getOfficialType(e)===kind && (STATE.progress[e.o]||'to-learn')==='done').length;
-    // display progress against official target, but still know how many mapped
-    const target = OFFICIAL_TARGETS[kind] || mappedCount || 0;
+    const total = PATHWAY.filter(e=>getBroadCategory(e)===kind).length;
+    const done = PATHWAY.filter(e=>getBroadCategory(e)===kind && (STATE.progress[e.o]||'to-learn')==='done').length;
+    const target = OFFICIAL_TARGETS[kind] || total || 0;
     const pct = target ? Math.round((done/target)*100) : 0;
-    return { total: target, mapped: mappedCount, done, pct };
+    return { total: target, count: total, done, pct };
   };
+
   const major = makeStats('major');
   const electives = makeStats('elective');
   const gened = makeStats('gened');
 
   container.innerHTML = `
-    <div class="overview-card" data-kind="major" title="View Major Required courses">
-      <div class="title">Major Required</div>
-      <div class="subtitle">Total Courses Required</div>
+    <div class="overview-card" data-kind="major" title="View Major courses">
+      <div class="title">Major</div>
+      <div class="subtitle">Official UoPeople major count</div>
       <div class="bignum">${major.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${major.done} Courses</span></div>
       <div class="small-progress"><div style="width:${Math.min(100, major.pct)}%"></div></div>
     </div>
-    <div class="overview-card" data-kind="elective" title="View Major Electives">
+    <div class="overview-card" data-kind="elective" title="View Electives">
       <div class="title">Electives</div>
-      <div class="subtitle">Total Courses Required</div>
+      <div class="subtitle">Official UoPeople elective count</div>
       <div class="bignum">${electives.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${electives.done} Courses</span></div>
       <div class="small-progress"><div style="width:${Math.min(100, electives.pct)}%"></div></div>
     </div>
     <div class="overview-card" data-kind="gened" title="View General Education">
       <div class="title">General Education</div>
-      <div class="subtitle">Total Courses Required</div>
+      <div class="subtitle">Official UoPeople general education count</div>
       <div class="bignum">${gened.total}</div>
       <div class="progress-caption"><span>Progress</span><span>${gened.done} Courses</span></div>
       <div class="small-progress"><div style="width:${Math.min(100, gened.pct)}%"></div></div>
@@ -1275,131 +1305,54 @@ function renderCourseOverview(){
   container.querySelectorAll('.overview-card').forEach(card=>{
     card.style.cursor = 'pointer';
     card.addEventListener('click', ()=>{
-      const kind = card.dataset.kind;
-      // sync active state to the official buttons
-      document.getElementById('officialBtnMajor').classList.toggle('active', kind==='major');
-      document.getElementById('officialBtnElective').classList.toggle('active', kind==='elective');
-      document.getElementById('officialBtnGenEd').classList.toggle('active', kind==='gened');
-      // switch to pathway tab
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
-      if(pathwayTab) pathwayTab.classList.add('active');
-      ["pathway","electives","planning","courses"].forEach(name=>{
-        const el = document.getElementById('tab-'+name);
-        if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
-      });
-      // render official list in courses manager
-      renderOfficialList(kind);
+      renderCourseCategoryList(card.dataset.kind);
     });
   });
+
+  renderCourseCategoryList(currentCourseCategory);
 }
 
-// wire official category buttons
-document.getElementById('officialBtnMajor').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.add('active'); document.getElementById('officialBtnElective').classList.remove('active'); document.getElementById('officialBtnGenEd').classList.remove('active'); renderOfficialList('major'); });
-document.getElementById('officialBtnElective').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.remove('active'); document.getElementById('officialBtnElective').classList.add('active'); document.getElementById('officialBtnGenEd').classList.remove('active'); renderOfficialList('elective'); });
-document.getElementById('officialBtnGenEd').addEventListener('click', ()=>{ document.getElementById('officialBtnMajor').classList.remove('active'); document.getElementById('officialBtnElective').classList.remove('active'); document.getElementById('officialBtnGenEd').classList.add('active'); renderOfficialList('gened'); });
+function renderCourseCategoryList(kind){
+  currentCourseCategory = kind;
+  setActiveCourseCategoryButton(kind);
 
-// default select major when courses tab opens
-document.querySelectorAll('.tab').forEach(tab=>{ tab.addEventListener('click', ()=>{ if(tab.dataset.tab==='courses'){ document.getElementById('officialBtnMajor').click(); } }); });
-
-function getEffectiveCategory(entry){
-  const overrides = STATE.courseCategoryOverride || {};
-  return overrides[entry.o] || entry.cat;
-}
-
-function renderCoursesList(filterCat){
-  const container = document.getElementById('coursesList');
+  const container = document.getElementById('courseCategoryList');
   if(!container) return;
-  const rows = PATHWAY.filter(e=>getEffectiveCategory(e) === filterCat).map(entry=>{
+
+  const entries = PATHWAY.filter(e=>getBroadCategory(e)===kind);
+  const rows = entries.map(entry=>{
     const c = resolveCourse(entry);
     const progress = STATE.progress[entry.o] || 'to-learn';
     const transferDecision = STATE.transferDecision[entry.o] || 'undecided';
-    const choiceHtml = entry.type === 'choice' ? (()=>{
-      const menu = getElectiveMenuData()[entry.menu];
-      const opts = (menu.options||[]).map((opt,i)=>`<option value="${i}" ${((STATE.choice[entry.o]||0)===i? 'selected':'')}>${escapeHtml(opt.name)} ${opt.code && opt.code!=='—' ? ' ('+escapeHtml(opt.code)+')':''}</option>`).join('');
-      return `<select data-order="${entry.o}" class="picker choice-select">${opts}</select>`;
-    })() : (entry.type === 'freetext' ? `<input data-order="${entry.o}" class="freetext" value="${escapeHtml(STATE.freeText[entry.o]||'')}" placeholder="Free text course">` : `<div><div class="name">${escapeHtml(c.name)}</div><div class="code mono">${escapeHtml(c.code)}</div></div>`);
-
-    const sVal = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia||'');
+    const sophiaValue = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia || '');
+    const noteValue = STATE.notes[entry.o] || '';
 
     return `<div class="card" style="margin-bottom:12px; align-items:flex-start;">
       <div style="flex:1; min-width:220px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div><div style="font-size:12px; color:var(--text-soft)">${escapeHtml(getEffectiveCategory(entry))}</div></div>
-        <div style="margin-top:8px">${choiceHtml}</div>
-        <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">Prereq: ${escapeHtml(c.prereq||'None')}</div>
-        <div style="margin-top:8px"> <span class="tag">SOPHIA</span> <input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
-        <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:700">#${entry.o} ${escapeHtml(c.name || entry.label || '(not chosen)')}</div>
+            <div style="color:var(--text-soft); margin-top:6px;">${escapeHtml(c.code || '—')} · Prereq: ${escapeHtml(c.prereq || 'None')}</div>
+          </div>
+          <div style="font-size:12px; color:var(--text-soft); white-space:nowrap;">${escapeHtml(getCategoryLabel(kind))}</div>
+        </div>
+        <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">${escapeHtml(noteValue || 'No personal notes yet.')}</div>
+        <div style="margin-top:8px; font-size:13px;">Sophia suggestion: ${escapeHtml(sophiaValue || '—')}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-        <select data-order="${entry.o}" class="picker category-select" style="width:200px;">
-          <option value="Major Required">Major Required</option>
-          <option value="Major Elective">Major Elective</option>
-          <option value="General Elective">General Elective</option>
-          <option value="Gen Ed">Gen Ed</option>
-        </select>
+        <button class="iconbtn" data-order="${entry.o}" data-action="open-pathway">Open in Pathway</button>
+        <button class="iconbtn" data-order="${entry.o}" data-action="manage">Manage</button>
         <button class="statusbtn ${progress}" data-order="${entry.o}">${PROGRESS_LABEL[progress]}</button>
         <button class="transferbtn ${transferDecision}" data-order="${entry.o}">${TRANSFER_LABEL[transferDecision]}</button>
       </div>
     </div>`;
   }).join('');
 
-  container.innerHTML = rows || `<div class="empty-note">No courses found for ${escapeHtml(filterCat)}.</div>`;
-
-  // wire events
-  container.querySelectorAll('.category-select').forEach(sel=>{
-    const ord = Number(sel.dataset.order);
-    const entry = PATHWAY.find(e=>e.o===ord);
-    if(!entry) return;
-    sel.value = getEffectiveCategory(entry);
-    sel.addEventListener('change', (e)=>{
-      STATE.courseCategoryOverride = STATE.courseCategoryOverride || {};
-      STATE.courseCategoryOverride[ord] = e.target.value;
-      queueSave(); renderCourseOverview(); renderCoursesList(filterCat);
-    });
-  });
-  container.querySelectorAll('.choice-select').forEach(sel=>{
-    sel.addEventListener('change',(e)=>{ STATE.choice[Number(e.target.dataset.order)] = Number(e.target.value); queueSave(); renderPathway(); renderCourseOverview(); });
-  });
-  container.querySelectorAll('.table-sophia-input').forEach(inp=>{
-    inp.addEventListener('input',(e)=>{ STATE.sophiaOverride[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
-  });
-  container.querySelectorAll('.notes').forEach(txt=>{ txt.addEventListener('input',(e)=>{ STATE.notes[Number(e.target.dataset.order)] = e.target.value; queueSave(); }); });
-  container.querySelectorAll('.freetext').forEach(inp=>{ inp.addEventListener('input',(e)=>{ STATE.freeText[Number(e.dataset.order)] = e.target.value; queueSave(); }); });
-  container.querySelectorAll('.statusbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const p=STATE.progress[ord]||'to-learn'; const idx = PROGRESS_CYCLE.indexOf(p); STATE.progress[ord]=PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
-  container.querySelectorAll('.transferbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const t=STATE.transferDecision[ord]||'undecided'; const idx=TRANSFER_CYCLE.indexOf(t); STATE.transferDecision[ord]=TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
-}
-
-function renderOfficialList(kind){
-  const container = document.getElementById('officialCoursesList');
-  if(!container) return;
-  // map to official key
-  function getOfficialType(entry){
-    if(entry.menu === 'majorelective' || entry.cat === 'Major Elective') return 'elective';
-    if(['socbehav','ethics','natsci','humanities','civilization','generalelective'].includes(entry.menu) || entry.cat === 'Gen Ed' || entry.cat === 'General Elective') return 'gened';
-    if(entry.menu === 'majormodules' || (entry.code && String(entry.code).startsWith('CS')) || entry.cat === 'Major Required') return 'major';
-    return 'major';
-  }
-
-  const rows = PATHWAY.filter(e=>getOfficialType(e)===kind).map(entry=>{
-    const c = resolveCourse(entry);
-    return `<div class="card" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-      <div style="flex:1;">
-        <div style="font-weight:700">#${entry.o} — ${escapeHtml(c.name || entry.label || '(not chosen)')}</div>
-        <div style="color:var(--text-soft); margin-top:6px;">${escapeHtml(c.code || '—')} · Prereq: ${escapeHtml(c.prereq || 'None')}</div>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <button class="iconbtn" data-order="${entry.o}" data-action="open-pathway">Open in Pathway</button>
-        <button class="iconbtn" data-order="${entry.o}" data-action="manage">Manage</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  container.innerHTML = rows || `<div class="empty-note">No courses found for this official category.</div>`;
+  container.innerHTML = rows || `<div class="empty-note">No courses found for ${escapeHtml(getCategoryLabel(kind))}.</div>`;
 
   container.querySelectorAll('button[data-action=open-pathway]').forEach(btn=>{
     btn.addEventListener('click',(e)=>{
-      const ord = Number(e.target.dataset.order);
-      // switch to pathway tab
+      const ord = Number(e.currentTarget.dataset.order);
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
       if(pathwayTab) pathwayTab.classList.add('active');
@@ -1407,7 +1360,6 @@ function renderOfficialList(kind){
         const el = document.getElementById('tab-'+name);
         if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
       });
-      // render pathway and scroll to node
       renderPathway();
       setTimeout(()=>{
         const el = document.getElementById('node-'+ord);
@@ -1418,112 +1370,57 @@ function renderOfficialList(kind){
 
   container.querySelectorAll('button[data-action=manage]').forEach(btn=>{
     btn.addEventListener('click',(e)=>{
-      const ord = Number(e.target.dataset.order);
-      // open courses manager and focus item by calling renderCoursesList of the effective category
-      const effCat = getEffectiveCategory(PATHWAY.find(p=>p.o===ord));
-      // switch to courses tab
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      const coursesTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='courses');
-      if(coursesTab) coursesTab.classList.add('active');
-      ["pathway","electives","planning","courses"].forEach(name=>{
-        const el = document.getElementById('tab-'+name);
-        if(el) el.style.display = (name==='courses') ? 'block' : 'none';
-      });
-      renderCoursesList(effCat);
-      // try to focus the item in coursesList by scrolling to the card containing it
-      setTimeout(()=>{
-        const card = document.querySelector('#coursesList .card [data-order="'+ord+'"]');
-        if(card && card.scrollIntoView) card.scrollIntoView({behavior:'smooth', block:'center'});
-      },120);
+      openCourseManageModal(Number(e.currentTarget.dataset.order));
+    });
+  });
+
+  container.querySelectorAll('.statusbtn').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      const ord = Number(e.currentTarget.dataset.order);
+      const p = STATE.progress[ord] || 'to-learn';
+      const idx = PROGRESS_CYCLE.indexOf(p);
+      STATE.progress[ord] = PROGRESS_CYCLE[(idx + 1) % PROGRESS_CYCLE.length];
+      queueSave(); renderCourseCategoryList(kind); renderStats(); renderCourseOverview();
+    });
+  });
+
+  container.querySelectorAll('.transferbtn').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      const ord = Number(e.currentTarget.dataset.order);
+      const t = STATE.transferDecision[ord] || 'undecided';
+      const idx = TRANSFER_CYCLE.indexOf(t);
+      STATE.transferDecision[ord] = TRANSFER_CYCLE[(idx + 1) % TRANSFER_CYCLE.length];
+      queueSave(); renderCourseCategoryList(kind); renderStats(); renderCourseOverview();
     });
   });
 }
 
-function autoOrganizeToOfficial(){
-  // target counts
-  const TARGET = { 'Major Required':20, 'Major Elective':10, 'Gen Ed':10 };
-  STATE.courseCategoryOverride = STATE.courseCategoryOverride || {};
+let currentManagedCourseOrder = null;
 
-  // We'll use the PATHWAY canonical categories as the baseline (entry.cat)
-  const entries = PATHWAY.map(e=>({ ...e }));
-
-  // Mark unmovable entries: fixed major-required cores and explicitly proctored/direct-UoPeople items
-  const unmovable = new Set();
-  entries.forEach(e=>{
-    if(e.type === 'fixed' && e.cat === 'Major Required') unmovable.add(e.o);
-    if(e.note && String(e.note).toLowerCase().includes('proctored')) unmovable.add(e.o);
-    if(e.sophia && String(e.sophia).toLowerCase().includes('take at uopeople')) unmovable.add(e.o);
-  });
-
-  // Start with assigned = original category
-  const assigned = {};
-  entries.forEach(e=>{ assigned[e.o] = e.cat; });
-
-  function countsFromAssigned(){ const c={'Major Required':0,'Major Elective':0,'Gen Ed':0,'General Elective':0}; Object.values(assigned).forEach(v=>{ if(c[v]!==undefined) c[v]++; }); return c; }
-
-  let counts = countsFromAssigned();
-
-  // Candidate pool: movable entries (not unmovable)
-  const candidates = entries.filter(e=>!unmovable.has(e.o));
-
-  // Helper: score a candidate for assigning to targetCat
-  function scoreCandidate(e, targetCat){
-    let score = 0;
-    if(e.type === 'choice') score += 30; // very movable
-    if(e.menu === 'majorelective' && targetCat === 'Major Elective') score += 20;
-    if(e.menu === 'generalelective' && (targetCat === 'Gen Ed' || targetCat === 'General Elective')) score += 12;
-    if(e.cat === targetCat) score += 10; // already in desired group
-    if(e.cat === 'Major Required' && targetCat !== 'Major Required') score -= 50; // avoid moving core major out
-    if(e.note && String(e.note).toLowerCase().includes('take at uopeople')) score -= 20;
-    return score;
-  }
-
-  const targetCats = ['Major Required','Major Elective','Gen Ed'];
-  // First, try to fill categories that are under target by selecting best-scoring candidates
-  targetCats.forEach(targetCat=>{
-    while((counts[targetCat] || 0) < (TARGET[targetCat] || 0)){
-      // pick best candidate not already assigned to the targetCat
-      let best = null; let bestScore = -Infinity;
-      for(const e of candidates){
-        if(assigned[e.o] === targetCat) continue;
-        const s = scoreCandidate(e, targetCat);
-        if(s > bestScore){ bestScore = s; best = e; }
-      }
-      if(!best || bestScore < -10) break; // no suitable candidate
-      assigned[best.o] = targetCat;
-      counts = countsFromAssigned();
-    }
-  });
-
-  // If any category is still over target, move excess from least preferred candidates
-  targetCats.forEach(targetCat=>{
-    while((counts[targetCat] || 0) > (TARGET[targetCat] || 0)){
-      // find a candidate currently in this cat that is movable and has low score for this cat
-      const pool = candidates.filter(e=>assigned[e.o] === targetCat);
-      if(!pool.length) break;
-      pool.sort((a,b)=> scoreCandidate(a,targetCat) - scoreCandidate(b,targetCat));
-      const toMove = pool[0];
-      // pick another category that is under target or least filled
-      const under = targetCats.find(c=> (counts[c] || 0) < (TARGET[c] || 0));
-      const dest = under || targetCats.find(c=>c!==targetCat);
-      if(!dest) break;
-      assigned[toMove.o] = dest;
-      counts = countsFromAssigned();
-    }
-  });
-
-  // Persist overrides where assigned differs from original
-  Object.keys(assigned).forEach(k=>{
-    const ord = Number(k);
-    const orig = PATHWAY.find(e=>e.o===ord);
-    if(orig && assigned[k] !== orig.cat) STATE.courseCategoryOverride[ord] = assigned[k];
-    else if(STATE.courseCategoryOverride && STATE.courseCategoryOverride[ord]) delete STATE.courseCategoryOverride[ord];
-  });
-
-  queueSave(); renderCourseOverview(); renderCoursesList('Major Required');
+function openCourseManageModal(order){
+  const entry = PATHWAY.find(e=>e.o===order);
+  if(!entry) return;
+  const course = resolveCourse(entry);
+  currentManagedCourseOrder = order;
+  document.getElementById('courseManageTitle').textContent = `Manage ${course.name || entry.label || 'course'}`;
+  document.getElementById('courseManageMeta').innerHTML = `${escapeHtml(course.code || '—')} · ${escapeHtml(course.prereq || 'None')}`;
+  document.getElementById('courseManageSophia').value = STATE.sophiaOverride[order] !== undefined ? STATE.sophiaOverride[order] : (course.sophia || '');
+  document.getElementById('courseManageNote').value = STATE.notes[order] || '';
+  document.getElementById('courseManageOverlay').style.display = 'flex';
 }
 
-function resetCategoryOverrides(){ STATE.courseCategoryOverride = {}; queueSave(); renderCourseOverview(); }
+function closeCourseManageModal(){
+  document.getElementById('courseManageOverlay').style.display = 'none';
+  currentManagedCourseOrder = null;
+}
+
+function saveManagedCourse(){
+  if(currentManagedCourseOrder === null) return;
+  const order = currentManagedCourseOrder;
+  STATE.sophiaOverride[order] = document.getElementById('courseManageSophia').value.trim();
+  STATE.notes[order] = document.getElementById('courseManageNote').value.trim();
+  queueSave(); closeCourseManageModal(); renderCourseCategoryList(currentCourseCategory); renderPathway(); renderStats();
+}
 
 function renderElectiveManager(){
   const menuSelect = document.getElementById("manageMenuSelect");
@@ -1758,8 +1655,9 @@ document.getElementById("manageCourseSelect").addEventListener("change", ()=>{ r
 document.getElementById("saveElectiveCourseBtn").addEventListener("click", saveElectiveCourse);
 document.getElementById("deleteElectiveCourseBtn").addEventListener("click", deleteElectiveCourse);
 document.getElementById("clearElectiveCourseBtn").addEventListener("click", clearElectiveCourseForm);
-document.getElementById('autoOrganizeBtn').addEventListener('click', ()=>{ showConfirm('Auto-organize','Attempt to reorganize course categories to the official 20 / 10 / 10 breakdown? This will set category overrides for some slots.', autoOrganizeToOfficial); });
-document.getElementById('resetCategoryOverridesBtn').addEventListener('click', ()=>{ showConfirm('Reset overrides','Reset category overrides and restore original categories for all courses?', resetCategoryOverrides); });
+document.getElementById('courseManageCancelBtn').addEventListener('click', closeCourseManageModal);
+document.getElementById('courseManageSaveBtn').addEventListener('click', saveManagedCourse);
+document.getElementById('courseManageOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'courseManageOverlay') closeCourseManageModal(); });
 
 function applyTheme(){
   document.documentElement.setAttribute("data-theme", STATE.theme);
