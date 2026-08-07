@@ -211,6 +211,14 @@
       <div style="flex:1; font-weight:700; font-size:18px;">Course overview</div>
     </div>
     <div class="overview-cards" id="coursesOverview"></div>
+    <div id="coursesManager" style="margin-top:8px;">
+      <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+        <button class="iconbtn" id="autoOrganizeBtn">Auto-organize to official counts</button>
+        <button class="iconbtn" id="resetCategoryOverridesBtn">Reset category overrides</button>
+        <div style="color:var(--text-soft); font-size:13px; margin-left:8px;">Official breakdown: Major 20 · Electives 10 · General Education 10</div>
+      </div>
+      <div id="coursesList"></div>
+    </div>
   </div>
 
   <div id="tab-pathway">
@@ -1156,8 +1164,8 @@ function renderCourseOverview(){
   const container = document.getElementById('coursesOverview');
   if(!container) return;
   const makeStats = (catLabel)=>{
-    const total = PATHWAY.filter(e=>e.cat===catLabel).length;
-    const done = PATHWAY.filter(e=>e.cat===catLabel && (STATE.progress[e.o]||'to-learn')==='done').length;
+    const total = PATHWAY.filter(e=>getEffectiveCategory(e)===catLabel).length;
+    const done = PATHWAY.filter(e=>getEffectiveCategory(e)===catLabel && (STATE.progress[e.o]||'to-learn')==='done').length;
     const pct = total ? Math.round((done/total)*100) : 0;
     return { total, done, pct };
   };
@@ -1204,9 +1212,124 @@ function renderCourseOverview(){
       activeFilter = cat;
       renderFilters();
       renderPathway();
+      // also render full list in courses manager
+      renderCoursesList(cat);
     });
   });
 }
+
+function getEffectiveCategory(entry){
+  const overrides = STATE.courseCategoryOverride || {};
+  return overrides[entry.o] || entry.cat;
+}
+
+function renderCoursesList(filterCat){
+  const container = document.getElementById('coursesList');
+  if(!container) return;
+  const rows = PATHWAY.filter(e=>getEffectiveCategory(e) === filterCat).map(entry=>{
+    const c = resolveCourse(entry);
+    const progress = STATE.progress[entry.o] || 'to-learn';
+    const transferDecision = STATE.transferDecision[entry.o] || 'undecided';
+    const choiceHtml = entry.type === 'choice' ? (()=>{
+      const menu = getElectiveMenuData()[entry.menu];
+      const opts = (menu.options||[]).map((opt,i)=>`<option value="${i}" ${((STATE.choice[entry.o]||0)===i? 'selected':'')}>${escapeHtml(opt.name)} ${opt.code && opt.code!=='—' ? ' ('+escapeHtml(opt.code)+')':''}</option>`).join('');
+      return `<select data-order="${entry.o}" class="picker choice-select">${opts}</select>`;
+    })() : (entry.type === 'freetext' ? `<input data-order="${entry.o}" class="freetext" value="${escapeHtml(STATE.freeText[entry.o]||'')}" placeholder="Free text course">` : `<div><div class="name">${escapeHtml(c.name)}</div><div class="code mono">${escapeHtml(c.code)}</div></div>`);
+
+    const sVal = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia||'');
+
+    return `<div class="card" style="margin-bottom:12px; align-items:flex-start;">
+      <div style="flex:1; min-width:220px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div><div style="font-size:12px; color:var(--text-soft)">${escapeHtml(getEffectiveCategory(entry))}</div></div>
+        <div style="margin-top:8px">${choiceHtml}</div>
+        <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">Prereq: ${escapeHtml(c.prereq||'None')}</div>
+        <div style="margin-top:8px"> <span class="tag">SOPHIA</span> <input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
+        <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+        <select data-order="${entry.o}" class="picker category-select" style="width:200px;">
+          <option value="Major Required">Major Required</option>
+          <option value="Major Elective">Major Elective</option>
+          <option value="General Elective">General Elective</option>
+          <option value="Gen Ed">Gen Ed</option>
+        </select>
+        <button class="statusbtn ${progress}" data-order="${entry.o}">${PROGRESS_LABEL[progress]}</button>
+        <button class="transferbtn ${transferDecision}" data-order="${entry.o}">${TRANSFER_LABEL[transferDecision]}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = rows || `<div class="empty-note">No courses found for ${escapeHtml(filterCat)}.</div>`;
+
+  // wire events
+  container.querySelectorAll('.category-select').forEach(sel=>{
+    const ord = Number(sel.dataset.order);
+    const entry = PATHWAY.find(e=>e.o===ord);
+    if(!entry) return;
+    sel.value = getEffectiveCategory(entry);
+    sel.addEventListener('change', (e)=>{
+      STATE.courseCategoryOverride = STATE.courseCategoryOverride || {};
+      STATE.courseCategoryOverride[ord] = e.target.value;
+      queueSave(); renderCourseOverview(); renderCoursesList(filterCat);
+    });
+  });
+  container.querySelectorAll('.choice-select').forEach(sel=>{
+    sel.addEventListener('change',(e)=>{ STATE.choice[Number(e.target.dataset.order)] = Number(e.target.value); queueSave(); renderPathway(); renderCourseOverview(); });
+  });
+  container.querySelectorAll('.table-sophia-input').forEach(inp=>{
+    inp.addEventListener('input',(e)=>{ STATE.sophiaOverride[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
+  });
+  container.querySelectorAll('.notes').forEach(txt=>{ txt.addEventListener('input',(e)=>{ STATE.notes[Number(e.target.dataset.order)] = e.target.value; queueSave(); }); });
+  container.querySelectorAll('.freetext').forEach(inp=>{ inp.addEventListener('input',(e)=>{ STATE.freeText[Number(e.dataset.order)] = e.target.value; queueSave(); }); });
+  container.querySelectorAll('.statusbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const p=STATE.progress[ord]||'to-learn'; const idx = PROGRESS_CYCLE.indexOf(p); STATE.progress[ord]=PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
+  container.querySelectorAll('.transferbtn').forEach(btn=>{ btn.addEventListener('click',(e)=>{ const ord=Number(e.target.dataset.order); const t=STATE.transferDecision[ord]||'undecided'; const idx=TRANSFER_CYCLE.indexOf(t); STATE.transferDecision[ord]=TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length]; queueSave(); renderCoursesList(filterCat); renderStats(); renderCourseOverview(); }); });
+}
+
+function autoOrganizeToOfficial(){
+  // target counts
+  const TARGET = { 'Major Required':20, 'Major Elective':10, 'Gen Ed':10 };
+  STATE.courseCategoryOverride = STATE.courseCategoryOverride || {};
+
+  // compute current pools
+  const entries = PATHWAY.map(e=>({ ...e, effective: getEffectiveCategory(e) }));
+  // find movable entries (choices and general elective slots and major elective slots)
+  const movable = entries.filter(e=> e.type==='choice' || e.cat==='Major Elective' || e.cat==='General Elective' || e.cat==='Gen Ed');
+
+  // start with fixed assignments for non-movable
+  const assigned = {};
+  entries.forEach(e=>{ if(!movable.includes(e)) assigned[e.o]=getEffectiveCategory(e); });
+
+  // helper to count current assigned
+  function countsFromAssigned(){ const c={'Major Required':0,'Major Elective':0,'Gen Ed':0,'General Elective':0}; Object.values(assigned).forEach(v=>{ if(c[v]!==undefined) c[v]++; }); return c; }
+
+  // assign movable entries to meet TARGET preferring their original category
+  movable.forEach(e=>{ assigned[e.o]=getEffectiveCategory(e); });
+
+  // adjust until matches TARGET for Major Required, Major Elective, Gen Ed
+  let counts = countsFromAssigned();
+  // Helper list of movable ids
+  const movableIds = movable.map(m=>m.o);
+
+  // prioritize moving entries that are currently in categories that exceed targets
+  const categories = ['Major Required','Major Elective','Gen Ed'];
+  categories.forEach(cat=>{
+    while(counts[cat] > (TARGET[cat]||0)){
+      // find a movable entry in this cat to move to a category that is under target
+      const under = categories.find(c=>counts[c] < (TARGET[c]||0));
+      if(!under) break;
+      const candidate = movable.find(m=> assigned[m.o]===cat && !categories.includes(m.cat) ? false : assigned[m.o]===cat);
+      if(!candidate) break;
+      assigned[candidate.o] = under;
+      counts = countsFromAssigned();
+    }
+  });
+
+  // write overrides
+  Object.keys(assigned).forEach(k=>{ const ord = Number(k); const orig = PATHWAY.find(e=>e.o===ord); if(orig && assigned[k] !== orig.cat) STATE.courseCategoryOverride[ord]=assigned[k]; else if(STATE.courseCategoryOverride && STATE.courseCategoryOverride[ord]) delete STATE.courseCategoryOverride[ord]; });
+  queueSave(); renderCourseOverview(); renderCoursesList('Major Required');
+}
+
+function resetCategoryOverrides(){ STATE.courseCategoryOverride = {}; queueSave(); renderCourseOverview(); }
 
 function renderElectiveManager(){
   const menuSelect = document.getElementById("manageMenuSelect");
@@ -1441,6 +1564,8 @@ document.getElementById("manageCourseSelect").addEventListener("change", ()=>{ r
 document.getElementById("saveElectiveCourseBtn").addEventListener("click", saveElectiveCourse);
 document.getElementById("deleteElectiveCourseBtn").addEventListener("click", deleteElectiveCourse);
 document.getElementById("clearElectiveCourseBtn").addEventListener("click", clearElectiveCourseForm);
+document.getElementById('autoOrganizeBtn').addEventListener('click', ()=>{ showConfirm('Auto-organize','Attempt to reorganize course categories to the official 20 / 10 / 10 breakdown? This will set category overrides for some slots.', autoOrganizeToOfficial); });
+document.getElementById('resetCategoryOverridesBtn').addEventListener('click', ()=>{ showConfirm('Reset overrides','Reset category overrides and restore original categories for all courses?', resetCategoryOverrides); });
 
 function applyTheme(){
   document.documentElement.setAttribute("data-theme", STATE.theme);
