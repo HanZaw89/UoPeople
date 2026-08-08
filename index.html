@@ -56,9 +56,20 @@
   .catbreak .cb{background:var(--bg-soft); padding:10px 14px;}
   .catbreak .cb .t{font-size:11px; color:var(--text-soft); text-transform:uppercase; letter-spacing:.05em;}
   .catbreak .cb .v{font-size:15px; font-weight:600; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
-  .progressbar{height:8px; border-radius:5px; background:var(--slate-soft); overflow:hidden; margin-top:12px;}
-  .progressbar > div{height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .4s ease;}
+  .progressbar{height:10px; border-radius:5px; background:var(--slate-soft); overflow:hidden; margin-top:12px; display:flex;}
+  .progressbar .seg{height:100%; transition:width .4s ease; flex-shrink:0;}
+  .progressbar .seg.seg-done{background:linear-gradient(90deg,var(--teal),var(--gold));}
+  .progressbar .seg.seg-learning{
+    background-image:repeating-linear-gradient(45deg, var(--amber) 0 6px, var(--amber-soft) 6px 12px);
+    background-size:34px 34px;
+    animation: progress-stripes 1.4s linear infinite;
+  }
+  @keyframes progress-stripes{ from{ background-position:0 0; } to{ background-position:34px 0; } }
   .progress-caption{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-soft); margin-top:6px;}
+  .progress-legend{display:flex; gap:14px; align-items:center;}
+  .progress-legend .dot{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:5px;}
+  .progress-legend .dot.done{background:var(--teal);}
+  .progress-legend .dot.learning{background:var(--amber);}
 
   .tabs{display:flex; gap:6px; margin:36px 0 18px; border-bottom:1px solid var(--line); flex-wrap:wrap;}
   .tab{padding:10px 16px; font-size:13.5px; font-weight:600; color:var(--text-soft); cursor:pointer; border-bottom:2px solid transparent; user-select:none;}
@@ -171,7 +182,7 @@
     .rail{padding-left:28px;}
     .node .dot{left:-28px; width:20px; height:20px; font-size:9px;}
   }
-  @media (prefers-reduced-motion: reduce){ * { transition:none !important; } }
+  @media (prefers-reduced-motion: reduce){ * { transition:none !important; animation:none !important; } }
 </style>
 </head>
 <body>
@@ -192,6 +203,7 @@
         <button class="iconbtn" id="redoBtn" title="Redo (Ctrl+Y)" disabled>Redo</button>
         <button class="iconbtn" id="exportBtn">Export</button>
         <button class="iconbtn" id="importBtn">Import</button>
+        <button class="iconbtn" id="resetBtn">Reset</button>
       </div>
       <input type="file" id="importFileInput" accept="application/json">
     </div>
@@ -199,8 +211,14 @@
 
   <div class="stats" id="statsRail"></div>
   <div class="catbreak" id="catBreak"></div>
-  <div class="progressbar"><div id="progressFill" style="width:0%"></div></div>
-  <div class="progress-caption"><span id="progressLabel">0 of 40 completed</span><span id="progressPct">0%</span></div>
+  <div class="progressbar"><div id="progressFillDone" class="seg seg-done" style="width:0%"></div><div id="progressFillLearning" class="seg seg-learning" style="width:0%"></div></div>
+  <div class="progress-caption">
+    <div class="progress-legend">
+      <span><span class="dot done"></span><span id="progressLabel">0 done</span></span>
+      <span><span class="dot learning"></span><span id="learningLabel">0 in progress</span></span>
+    </div>
+    <span id="progressPct">0%</span>
+  </div>
 
   <div class="tabs">
     <div class="tab active" data-tab="pathway">Pathway</div>
@@ -424,8 +442,10 @@ function addQualifiedGeneralElectiveOption(opt){
   ...ELECTIVE_MENUS.civilization.options,
   ...ELECTIVE_MENUS.bus_major.options,
   ...ELECTIVE_MENUS.hs_major.options,
-  ...ELECTIVE_MENUS.majorelective.options,
-  ...ELECTIVE_MENUS.majormodules.options,
+  // Note: majorelective and majormodules options are deliberately NOT included here.
+  // Those courses are already mandatory elsewhere in this same 40-course pathway
+  // (as Major Electives or Major Required courses) — offering them again as "General
+  // Elective" choices would let the same course get double-counted toward the degree.
   {name:"English Composition 1", code:"ENGL 1101", prereq:"None", sophia:"English Composition I"},
   {name:"English Composition 2", code:"ENGL 1102", prereq:"None", sophia:"English Composition I"},
   {name:"College Algebra", code:"MATH 1201", prereq:"None", sophia:"College Algebra"},
@@ -538,7 +558,7 @@ function getDefaultState(){
       39: "Take at UoPeople (Direct CS Core)",
       40: "Developing Effective Teams"
     },
-    electiveSophiaOverrides: {},
+    electiveMenus: null,
     freeText: {},
     notes: {},
     theme: "dark",
@@ -572,12 +592,19 @@ function getPlanningDefaults(){
 function mergeStateWithDefaults(stateData, defaultsData){
   const defaults = cloneState(defaultsData || getDefaultState());
   const state = cloneState(stateData || {});
-  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "electiveSophiaOverrides", "freeText", "notes", "planning"];
+  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "planning"];
   nestedKeys.forEach(key=>{
     if(state[key] !== undefined){
       defaults[key] = deepMerge(defaults[key] || {}, state[key] || {});
     }
   });
+  // electiveMenus holds the user's custom/edited elective course catalog (added, edited, or
+  // deleted via "Manage Elective Courses"). It must be carried through wholesale from the saved
+  // state — it was previously missing from this merge, causing custom edits to silently reset
+  // to defaults on every reload.
+  if(state.electiveMenus && typeof state.electiveMenus === "object"){
+    defaults.electiveMenus = cloneState(state.electiveMenus);
+  }
   if(state.theme !== undefined) defaults.theme = state.theme;
   if(defaults.planning && typeof defaults.planning === "object"){
     defaults.planning = { ...getPlanningDefaults(), ...defaults.planning };
@@ -598,7 +625,6 @@ function ensureStateShape(){
   STATE.transferDecision = STATE.transferDecision || {};
   STATE.choice = STATE.choice || {};
   STATE.sophiaOverride = STATE.sophiaOverride || {};
-  STATE.electiveSophiaOverrides = STATE.electiveSophiaOverrides || {};
   STATE.freeText = STATE.freeText || {};
   STATE.notes = STATE.notes || {};
   STATE.theme = STATE.theme || "dark";
@@ -626,18 +652,6 @@ function getElectiveMenuData(){
     STATE.electiveMenus = getDefaultElectiveMenus();
   }
   return STATE.electiveMenus;
-}
-
-function getElectiveKey(opt){
-  return (opt.code && opt.code !== "—") ? opt.code : opt.name;
-}
-
-function getElectiveSophia(opt){
-  const key = getElectiveKey(opt);
-  if(STATE.electiveSophiaOverrides && STATE.electiveSophiaOverrides[key] !== undefined){
-    return STATE.electiveSophiaOverrides[key];
-  }
-  return opt.sophia || "";
 }
 
 function escapeHtml(str){
@@ -714,22 +728,10 @@ async function attemptSave(retriesLeft){
     } else {
       localStorage.setItem(STORAGE_KEY, payload);
     }
-
-    if(remotePersistenceAvailable){
-      try {
-        const response = await fetch(REMOTE_STATE_URL, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: payload
-        });
-        if(!response.ok){
-          console.warn("Remote save skipped:", response.status);
-        }
-      } catch(remoteErr){
-        console.warn("Remote save skipped:", remoteErr);
-      }
-    }
-
+    // Note: pathway-state.json is only ever read (it seeds shared defaults on first load).
+    // GitHub Pages is static hosting with no write endpoint, so we never attempt to write
+    // back to it — that request could never succeed and previously just failed silently
+    // on every single save.
     if(myToken !== saveAttemptToken) return;
     setSyncBadge("ok");
   }catch(e){
@@ -753,8 +755,7 @@ function resolveCourse(entry){
   const menu = getElectiveMenuData()[entry.menu];
   const chosenIdx = STATE.choice[entry.o] ?? 0;
   const opt = menu.options[chosenIdx] || menu.options[0];
-  const sophiaVal = getElectiveSophia(opt);
-  return { name: opt.name, code: opt.code, prereq: opt.prereq, cat: entry.cat, sophia: sophiaVal, label:entry.label };
+  return { name: opt.name, code: opt.code, prereq: opt.prereq, cat: entry.cat, sophia: opt.sophia || "", label:entry.label };
 }
 
 const PROGRESS_CYCLE = ["to-learn","learning","done"];
@@ -817,7 +818,8 @@ function renderStats(){
     if(t==="not-transferable") notTransferable++;
   });
   const total = PATHWAY.length;
-  const pct = Math.round((done/total)*100);
+  const donePct = Math.round((done/total)*100);
+  const learningPct = Math.round((learning/total)*100);
   document.getElementById("statsRail").innerHTML = `
     <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Courses done</div></div>
     <div class="stat"><div class="num">${learning}</div><div class="lbl">In progress</div></div>
@@ -834,9 +836,11 @@ function renderStats(){
   }).join("");
   document.getElementById("catBreak").innerHTML = catHtml;
 
-  document.getElementById("progressFill").style.width = pct+"%";
-  document.getElementById("progressLabel").textContent = `${done} of ${total} completed`;
-  document.getElementById("progressPct").textContent = pct+"%";
+  document.getElementById("progressFillDone").style.width = donePct+"%";
+  document.getElementById("progressFillLearning").style.width = learningPct+"%";
+  document.getElementById("progressLabel").textContent = `${done} done`;
+  document.getElementById("learningLabel").textContent = `${learning} in progress`;
+  document.getElementById("progressPct").textContent = donePct+"% of "+total;
 
   renderPlanning();
   renderCourseOverview();
@@ -1077,6 +1081,11 @@ function pushSnapshotIfDifferent(){
     // trim redo entries
     if(HISTORY_INDEX < HISTORY.length - 1) HISTORY = HISTORY.slice(0, HISTORY_INDEX+1);
     HISTORY.push(cloneState(STATE));
+    // cap history length so a long session doesn't grow this unbounded
+    const MAX_HISTORY = 100;
+    if(HISTORY.length > MAX_HISTORY){
+      HISTORY = HISTORY.slice(HISTORY.length - MAX_HISTORY);
+    }
     HISTORY_INDEX = HISTORY.length - 1;
     LAST_SNAPSHOT = snap;
     updateUndoRedoButtons();
@@ -1155,12 +1164,18 @@ function renderMenuTabs(){
 function attachTableSophiaEvents(container){
   container.querySelectorAll('.table-sophia-input').forEach(input=>{
     input.addEventListener('input', (e)=>{
-      const key = e.target.dataset.key;
-      STATE.electiveSophiaOverrides[key] = e.target.value;
-      queueSave();
+      const menuKey = e.target.dataset.menu;
+      const idx = Number(e.target.dataset.idx);
+      const menus = getElectiveMenuData();
+      if(menus[menuKey] && menus[menuKey].options[idx]){
+        menus[menuKey].options[idx].sophia = e.target.value;
+        STATE.electiveMenus = menus;
+        queueSave();
+      }
     });
     input.addEventListener('blur', ()=>{
       renderPathway();
+      renderCoursesList();
     });
   });
 }
@@ -1173,17 +1188,15 @@ function renderMenuContent(){
     let rows = "";
     let any = false;
     Object.entries(menus).forEach(([key, menu])=>{
-      menu.options.forEach(opt=>{
+      menu.options.forEach((opt, idx)=>{
         if(!optMatchesSearch(opt, menu.label)) return;
         any = true;
-        const eKey = getElectiveKey(opt);
-        const sVal = getElectiveSophia(opt);
         rows += `<tr>
           <td>${menu.label}</td>
           <td>${opt.name}</td>
           <td class="mono">${opt.code}</td>
           <td>${opt.prereq}</td>
-          <td><input type="text" class="table-sophia-input" data-key="${escapeHtml(eKey)}" value="${escapeHtml(sVal)}" placeholder="Enter Sophia course..."></td>
+          <td><input type="text" class="table-sophia-input" data-menu="${key}" data-idx="${idx}" value="${escapeHtml(opt.sophia||'')}" placeholder="Enter Sophia course..."></td>
         </tr>`;
       });
     });
@@ -1196,15 +1209,15 @@ function renderMenuContent(){
   }
 
   const menu = menus[activeMenuKey];
-  const filteredOpts = menu.options.filter(opt=>optMatchesSearch(opt, menu.label));
-  let rows = filteredOpts.map(opt=>{
-    const eKey = getElectiveKey(opt);
-    const sVal = getElectiveSophia(opt);
+  const filteredOpts = menu.options
+    .map((opt, idx)=>({ opt, idx }))
+    .filter(({opt})=>optMatchesSearch(opt, menu.label));
+  let rows = filteredOpts.map(({opt, idx})=>{
     return `<tr>
       <td>${opt.name}</td>
       <td class="mono">${opt.code}</td>
       <td>${opt.prereq}</td>
-      <td><input type="text" class="table-sophia-input" data-key="${escapeHtml(eKey)}" value="${escapeHtml(sVal)}" placeholder="Enter Sophia course..."></td>
+      <td><input type="text" class="table-sophia-input" data-menu="${activeMenuKey}" data-idx="${idx}" value="${escapeHtml(opt.sophia||'')}" placeholder="Enter Sophia course..."></td>
     </tr>`;
   }).join("");
   el.innerHTML = `
@@ -1523,19 +1536,11 @@ function wirePlanningInputs(){
         STATE.planning = { ...STATE.planning, [key]: parseFloat(e.target.value) || 0 };
         queueSave(); renderPlanning();
       });
-      el.addEventListener("change", (e)=>{
-        STATE.planning = { ...STATE.planning, [key]: parseFloat(e.target.value) || 0 };
-        queueSave(); renderPlanning();
-      });
     }
   });
   const targetMonths = document.getElementById("in_targetMonths");
   if(targetMonths){
     targetMonths.addEventListener("input", (e)=>{
-      STATE.planning = { ...STATE.planning, targetMonths: parseFloat(e.target.value) || 0 };
-      queueSave(); renderPlanning();
-    });
-    targetMonths.addEventListener("change", (e)=>{
       STATE.planning = { ...STATE.planning, targetMonths: parseFloat(e.target.value) || 0 };
       queueSave(); renderPlanning();
     });
@@ -1608,8 +1613,11 @@ document.getElementById("themeToggleBtn").addEventListener("click", ()=>{
 document.getElementById('undoBtn').addEventListener('click', ()=>{ doUndo(); });
 document.getElementById('redoBtn').addEventListener('click', ()=>{ doRedo(); });
 
-// keyboard shortcuts
+// keyboard shortcuts — skip entirely while typing in an editable field, so native
+// text-undo (e.g. fixing a typo in a notes box) isn't hijacked by the app's undo/redo.
 document.addEventListener('keydown', (e)=>{
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if(["INPUT","TEXTAREA","SELECT"].includes(tag)) return;
   if((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z'){ e.preventDefault(); doUndo(); }
   if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))){ e.preventDefault(); doRedo(); }
 });
@@ -1648,6 +1656,24 @@ document.getElementById("importFileInput").addEventListener("change", (e)=>{
   };
   reader.readAsText(file);
   e.target.value = "";
+});
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  showConfirm(
+    "Reset everything",
+    "This clears all progress, transfer decisions, elective choices, notes, and custom elective courses. This cannot be undone by Undo. Continue?",
+    ()=>{
+      STATE = getDefaultState();
+      ensureStateShape();
+      applyTheme();
+      queueSave();
+      renderAll();
+      HISTORY = [ cloneState(STATE) ];
+      HISTORY_INDEX = 0;
+      LAST_SNAPSHOT = JSON.stringify(STATE);
+      updateUndoRedoButtons();
+    }
+  );
 });
 
 function renderAll(){
