@@ -212,19 +212,14 @@
   <div id="tab-courses" style="display:none;">
     <div class="toolbar" style="margin-bottom:6px;">
       <div style="flex:1; font-weight:700; font-size:18px;">Course overview</div>
+      <div style="color:var(--text-soft); font-size:13px;">Official UoPeople breakdown: Major 20 · Electives 10 · General Education 10</div>
     </div>
     <div class="overview-cards" id="coursesOverview"></div>
-    <div class="slot-note" style="margin-bottom:14px;">
-      <strong>Official UoPeople structure:</strong> this view uses the broader degree categories only — Major, Electives, and General Education — with the official 20 / 10 / 10 balance.
+    <div class="toolbar" style="margin-top:16px;">
+      <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="coursesSearchInput" placeholder="Search within this category..."></div>
+      <div class="menu-tabs" id="courseCategoryTabs"></div>
     </div>
-    <div id="coursesManager" style="margin-top:8px;">
-      <div style="margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="menu-tab-btn active" id="courseCategoryBtnMajor" data-key="major">Major (20)</button>
-        <button class="menu-tab-btn" id="courseCategoryBtnElective" data-key="elective">Electives (10)</button>
-        <button class="menu-tab-btn" id="courseCategoryBtnGenEd" data-key="gened">General Education (10)</button>
-      </div>
-      <div id="courseCategoryList"></div>
-    </div>
+    <div id="coursesList"></div>
   </div>
 
   <div id="tab-pathway">
@@ -316,25 +311,6 @@
       <h3 id="modalTitle">Notice</h3>
       <p id="modalMessage"></p>
       <div class="modal-actions" id="modalActions"></div>
-    </div>
-  </div>
-
-  <div id="courseManageOverlay" class="modal-overlay" style="display:none;">
-    <div class="modal-card">
-      <h3 id="courseManageTitle">Manage course</h3>
-      <div id="courseManageMeta" class="slot-note" style="margin-bottom:14px;"></div>
-      <div class="inputrow" style="flex-direction:column; align-items:flex-start; gap:6px; margin-bottom:10px;">
-        <label for="courseManageSophia" style="font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">Suggested Sophia course</label>
-        <input id="courseManageSophia" class="freetext" style="margin-top:0;">
-      </div>
-      <div class="inputrow" style="flex-direction:column; align-items:flex-start; gap:6px; margin-bottom:10px;">
-        <label for="courseManageNote" style="font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">Personal note</label>
-        <textarea id="courseManageNote" class="notes" style="min-height:86px; margin-top:0;"></textarea>
-      </div>
-      <div class="modal-actions">
-        <button class="modal-btn secondary" id="courseManageCancelBtn">Cancel</button>
-        <button class="modal-btn primary" id="courseManageSaveBtn">Save</button>
-      </div>
     </div>
   </div>
 
@@ -863,6 +839,8 @@ function renderStats(){
   document.getElementById("progressPct").textContent = pct+"%";
 
   renderPlanning();
+  renderCourseOverview();
+  renderCoursesList();
 }
 
 function renderFilters(){
@@ -1236,191 +1214,152 @@ function renderMenuContent(){
   attachTableSophiaEvents(el);
 }
 
-let currentCourseCategory = 'major';
-
-function getBroadCategory(entry){
-  const override = STATE.courseCategoryOverride && STATE.courseCategoryOverride[entry.o];
-  if(override && ['major','elective','gened'].includes(override)) return override;
-
-  const majorOrders = new Set([2,4,6,8,10,12,13,15,18,20,22,24,26,28,29,30,31,32,34,39]);
-  const electiveOrders = new Set([5,9,14,25,33,35,36,37,38,40]);
-
-  if(majorOrders.has(entry.o)) return 'major';
-  if(electiveOrders.has(entry.o)) return 'elective';
-  return 'gened';
-}
-
-function getCategoryLabel(kind){
-  return kind === 'major' ? 'Major' : kind === 'elective' ? 'Electives' : 'General Education';
-}
-
-function setActiveCourseCategoryButton(kind){
-  ['major','elective','gened'].forEach(key=>{
-    const btn = document.getElementById('courseCategoryBtn' + (key==='major' ? 'Major' : key==='elective' ? 'Elective' : 'GenEd'));
-    if(btn) btn.classList.toggle('active', key===kind);
-  });
-}
+// ===== Official UoPeople 3-category breakdown (fixed by UoPeople's own program structure) =====
+// Major Required: 20 courses (17 Major Required pathway slots + the 3 math Gen-Ed slots that are
+//   CS-major prerequisites: College Algebra, Statistics, Calculus).
+// Electives: 10 courses (9 Major Electives + the 1 General Elective slot).
+// General Education: 10 courses (the remaining Gen Ed slots).
+// This mapping is fixed and derived directly from the official program breakdown — no per-course
+// manual override or auto-organize heuristic is needed, since 20/10/10 always holds exactly.
+const OFFICIAL_CATEGORY = {};
+PATHWAY.forEach(entry=>{
+  if(entry.cat === 'Major Elective' || entry.cat === 'General Elective'){
+    OFFICIAL_CATEGORY[entry.o] = 'elective';
+  } else if(entry.cat === 'Gen Ed' && ['MATH 1201','MATH 1280','MATH 1211'].includes(entry.code)){
+    OFFICIAL_CATEGORY[entry.o] = 'major';
+  } else if(entry.cat === 'Gen Ed'){
+    OFFICIAL_CATEGORY[entry.o] = 'gened';
+  } else {
+    OFFICIAL_CATEGORY[entry.o] = 'major'; // Major Required
+  }
+});
+const OFFICIAL_LABEL = { major: 'Major Required', elective: 'Electives', gened: 'General Education' };
+const OFFICIAL_TOTAL = { major: 20, elective: 10, gened: 10 };
+let activeCourseCategory = 'major';
+let coursesSearchTerm = '';
 
 function renderCourseOverview(){
   const container = document.getElementById('coursesOverview');
   if(!container) return;
-
-  const OFFICIAL_TARGETS = { major: 20, elective: 10, gened: 10 };
-  const makeStats = (kind)=>{
-    const total = PATHWAY.filter(e=>getBroadCategory(e)===kind).length;
-    const done = PATHWAY.filter(e=>getBroadCategory(e)===kind && (STATE.progress[e.o]||'to-learn')==='done').length;
-    const target = OFFICIAL_TARGETS[kind] || total || 0;
-    const pct = target ? Math.round((done/target)*100) : 0;
-    return { total: target, count: total, done, pct };
-  };
-
-  const major = makeStats('major');
-  const electives = makeStats('elective');
-  const gened = makeStats('gened');
-
-  container.innerHTML = `
-    <div class="overview-card" data-kind="major" title="View Major courses">
-      <div class="title">Major</div>
-      <div class="subtitle">Official UoPeople major count</div>
-      <div class="bignum">${major.total}</div>
-      <div class="progress-caption"><span>Progress</span><span>${major.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${Math.min(100, major.pct)}%"></div></div>
-    </div>
-    <div class="overview-card" data-kind="elective" title="View Electives">
-      <div class="title">Electives</div>
-      <div class="subtitle">Official UoPeople elective count</div>
-      <div class="bignum">${electives.total}</div>
-      <div class="progress-caption"><span>Progress</span><span>${electives.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${Math.min(100, electives.pct)}%"></div></div>
-    </div>
-    <div class="overview-card" data-kind="gened" title="View General Education">
-      <div class="title">General Education</div>
-      <div class="subtitle">Official UoPeople general education count</div>
-      <div class="bignum">${gened.total}</div>
-      <div class="progress-caption"><span>Progress</span><span>${gened.done} Courses</span></div>
-      <div class="small-progress"><div style="width:${Math.min(100, gened.pct)}%"></div></div>
-    </div>
-  `;
-
+  const done = { major:0, elective:0, gened:0 };
+  PATHWAY.forEach(entry=>{
+    if((STATE.progress[entry.o]||'to-learn')==='done') done[OFFICIAL_CATEGORY[entry.o]]++;
+  });
+  container.innerHTML = ['major','elective','gened'].map(key=>{
+    const total = OFFICIAL_TOTAL[key];
+    const pct = total ? Math.round((done[key]/total)*100) : 0;
+    return `
+      <div class="overview-card" data-kind="${key}" style="cursor:pointer;" title="View ${OFFICIAL_LABEL[key]} courses">
+        <div class="title">${OFFICIAL_LABEL[key]}</div>
+        <div class="subtitle">Total Courses Required</div>
+        <div class="bignum">${total}</div>
+        <div class="progress-caption"><span>Progress</span><span>${done[key]} Courses</span></div>
+        <div class="small-progress"><div style="width:${Math.min(100,pct)}%"></div></div>
+      </div>
+    `;
+  }).join('');
   container.querySelectorAll('.overview-card').forEach(card=>{
-    card.style.cursor = 'pointer';
     card.addEventListener('click', ()=>{
-      renderCourseCategoryList(card.dataset.kind);
+      activeCourseCategory = card.dataset.kind;
+      renderCourseCategoryTabs();
+      renderCoursesList();
     });
   });
-
-  renderCourseCategoryList(currentCourseCategory);
 }
 
-function renderCourseCategoryList(kind){
-  currentCourseCategory = kind;
-  setActiveCourseCategoryButton(kind);
+function renderCourseCategoryTabs(){
+  const el = document.getElementById('courseCategoryTabs');
+  if(!el) return;
+  el.innerHTML = '';
+  ['major','elective','gened'].forEach(key=>{
+    const btn = document.createElement('div');
+    btn.className = 'menu-tab-btn' + (activeCourseCategory===key ? ' active':'');
+    btn.textContent = `${OFFICIAL_LABEL[key]} (${OFFICIAL_TOTAL[key]})`;
+    btn.onclick = ()=>{ activeCourseCategory = key; renderCourseCategoryTabs(); renderCoursesList(); };
+    el.appendChild(btn);
+  });
+}
 
-  const container = document.getElementById('courseCategoryList');
+function renderCoursesList(){
+  const container = document.getElementById('coursesList');
   if(!container) return;
-
-  const entries = PATHWAY.filter(e=>getBroadCategory(e)===kind);
-  const rows = entries.map(entry=>{
+  const term = (coursesSearchTerm||'').toLowerCase();
+  const rows = PATHWAY.filter(e=>OFFICIAL_CATEGORY[e.o]===activeCourseCategory).filter(entry=>{
+    if(!term) return true;
+    const c = resolveCourse(entry);
+    const hay = `${c.name} ${c.code} ${entry.label||''}`.toLowerCase();
+    return hay.includes(term);
+  }).map(entry=>{
     const c = resolveCourse(entry);
     const progress = STATE.progress[entry.o] || 'to-learn';
     const transferDecision = STATE.transferDecision[entry.o] || 'undecided';
-    const sophiaValue = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia || '');
-    const noteValue = STATE.notes[entry.o] || '';
+    const choiceHtml = entry.type === 'choice' ? (()=>{
+      const menu = getElectiveMenuData()[entry.menu];
+      const opts = (menu.options||[]).map((opt,i)=>`<option value="${i}" ${((STATE.choice[entry.o]||0)===i? 'selected':'')}>${escapeHtml(opt.name)}${opt.code && opt.code!=='—' ? ' ('+escapeHtml(opt.code)+')':''}</option>`).join('');
+      return `<select data-order="${entry.o}" class="picker choice-select">${opts}</select>`;
+    })() : (entry.type === 'freetext' ? `<input data-order="${entry.o}" class="freetext" value="${escapeHtml(STATE.freeText[entry.o]||'')}" placeholder="Free text course">` : `<div><div class="name">${escapeHtml(c.name)}</div><div class="code mono">${escapeHtml(c.code)}</div></div>`);
+
+    const sVal = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia||'');
 
     return `<div class="card" style="margin-bottom:12px; align-items:flex-start;">
       <div style="flex:1; min-width:220px;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700">#${entry.o} ${escapeHtml(c.name || entry.label || '(not chosen)')}</div>
-            <div style="color:var(--text-soft); margin-top:6px;">${escapeHtml(c.code || '—')} · Prereq: ${escapeHtml(c.prereq || 'None')}</div>
-          </div>
-          <div style="font-size:12px; color:var(--text-soft); white-space:nowrap;">${escapeHtml(getCategoryLabel(kind))}</div>
-        </div>
-        <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">${escapeHtml(noteValue || 'No personal notes yet.')}</div>
-        <div style="margin-top:8px; font-size:13px;">Sophia suggestion: ${escapeHtml(sophiaValue || '—')}</div>
+        <div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div>
+        <div style="margin-top:8px">${choiceHtml}</div>
+        <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">Prereq: ${escapeHtml(c.prereq||'None')}</div>
+        <div style="margin-top:8px"> <span class="tag">SOPHIA</span> <input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
+        <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-        <button class="iconbtn" data-order="${entry.o}" data-action="open-pathway">Open in Pathway</button>
-        <button class="iconbtn" data-order="${entry.o}" data-action="manage">Manage</button>
         <button class="statusbtn ${progress}" data-order="${entry.o}">${PROGRESS_LABEL[progress]}</button>
         <button class="transferbtn ${transferDecision}" data-order="${entry.o}">${TRANSFER_LABEL[transferDecision]}</button>
       </div>
     </div>`;
   }).join('');
 
-  container.innerHTML = rows || `<div class="empty-note">No courses found for ${escapeHtml(getCategoryLabel(kind))}.</div>`;
+  container.innerHTML = rows || `<div class="empty-note">No courses match${term ? ' your search' : ' this category'}.</div>`;
 
-  container.querySelectorAll('button[data-action=open-pathway]').forEach(btn=>{
-    btn.addEventListener('click',(e)=>{
-      const ord = Number(e.currentTarget.dataset.order);
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      const pathwayTab = Array.from(document.querySelectorAll('.tab')).find(t=>t.dataset.tab==='pathway');
-      if(pathwayTab) pathwayTab.classList.add('active');
-      ["pathway","electives","planning","courses"].forEach(name=>{
-        const el = document.getElementById('tab-'+name);
-        if(el) el.style.display = (name==='pathway') ? 'block' : 'none';
-      });
-      renderPathway();
-      setTimeout(()=>{
-        const el = document.getElementById('node-'+ord);
-        if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.add('highlight'); setTimeout(()=>el.classList.remove('highlight'), 2200); }
-      }, 120);
+  container.querySelectorAll('.choice-select').forEach(sel=>{
+    sel.addEventListener('change',(e)=>{
+      const ord = Number(e.target.dataset.order);
+      STATE.choice[ord] = Number(e.target.value);
+      delete STATE.sophiaOverride[ord];
+      queueSave(); renderPathway(); renderCoursesList(); renderCourseOverview();
     });
   });
-
-  container.querySelectorAll('button[data-action=manage]').forEach(btn=>{
-    btn.addEventListener('click',(e)=>{
-      openCourseManageModal(Number(e.currentTarget.dataset.order));
-    });
+  container.querySelectorAll('.table-sophia-input').forEach(inp=>{
+    inp.addEventListener('input',(e)=>{ STATE.sophiaOverride[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
   });
-
+  container.querySelectorAll('.notes').forEach(txt=>{
+    txt.addEventListener('input',(e)=>{ STATE.notes[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
+  });
+  container.querySelectorAll('.freetext').forEach(inp=>{
+    inp.addEventListener('input',(e)=>{ STATE.freeText[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
+  });
   container.querySelectorAll('.statusbtn').forEach(btn=>{
     btn.addEventListener('click',(e)=>{
-      const ord = Number(e.currentTarget.dataset.order);
-      const p = STATE.progress[ord] || 'to-learn';
+      const ord=Number(e.target.dataset.order);
+      const p=STATE.progress[ord]||'to-learn';
       const idx = PROGRESS_CYCLE.indexOf(p);
-      STATE.progress[ord] = PROGRESS_CYCLE[(idx + 1) % PROGRESS_CYCLE.length];
-      queueSave(); renderCourseCategoryList(kind); renderStats(); renderCourseOverview();
+      STATE.progress[ord]=PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length];
+      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview();
     });
   });
-
   container.querySelectorAll('.transferbtn').forEach(btn=>{
     btn.addEventListener('click',(e)=>{
-      const ord = Number(e.currentTarget.dataset.order);
-      const t = STATE.transferDecision[ord] || 'undecided';
-      const idx = TRANSFER_CYCLE.indexOf(t);
-      STATE.transferDecision[ord] = TRANSFER_CYCLE[(idx + 1) % TRANSFER_CYCLE.length];
-      queueSave(); renderCourseCategoryList(kind); renderStats(); renderCourseOverview();
+      const ord=Number(e.target.dataset.order);
+      const t=STATE.transferDecision[ord]||'undecided';
+      const idx=TRANSFER_CYCLE.indexOf(t);
+      STATE.transferDecision[ord]=TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length];
+      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview();
     });
   });
 }
 
-let currentManagedCourseOrder = null;
-
-function openCourseManageModal(order){
-  const entry = PATHWAY.find(e=>e.o===order);
-  if(!entry) return;
-  const course = resolveCourse(entry);
-  currentManagedCourseOrder = order;
-  document.getElementById('courseManageTitle').textContent = `Manage ${course.name || entry.label || 'course'}`;
-  document.getElementById('courseManageMeta').innerHTML = `${escapeHtml(course.code || '—')} · ${escapeHtml(course.prereq || 'None')}`;
-  document.getElementById('courseManageSophia').value = STATE.sophiaOverride[order] !== undefined ? STATE.sophiaOverride[order] : (course.sophia || '');
-  document.getElementById('courseManageNote').value = STATE.notes[order] || '';
-  document.getElementById('courseManageOverlay').style.display = 'flex';
+const coursesSearchEl = document.getElementById('coursesSearchInput');
+if(coursesSearchEl){
+  coursesSearchEl.addEventListener('input', (e)=>{ coursesSearchTerm = e.target.value; renderCoursesList(); });
 }
 
-function closeCourseManageModal(){
-  document.getElementById('courseManageOverlay').style.display = 'none';
-  currentManagedCourseOrder = null;
-}
-
-function saveManagedCourse(){
-  if(currentManagedCourseOrder === null) return;
-  const order = currentManagedCourseOrder;
-  STATE.sophiaOverride[order] = document.getElementById('courseManageSophia').value.trim();
-  STATE.notes[order] = document.getElementById('courseManageNote').value.trim();
-  queueSave(); closeCourseManageModal(); renderCourseCategoryList(currentCourseCategory); renderPathway(); renderStats();
-}
 
 function renderElectiveManager(){
   const menuSelect = document.getElementById("manageMenuSelect");
@@ -1640,9 +1579,10 @@ document.querySelectorAll(".tab").forEach(tab=>{
       const el = document.getElementById("tab-"+name);
       if(el) el.style.display = (name===tab.dataset.tab) ? "block":"none";
     });
+    if(tab.dataset.tab === "pathway") renderPathway();
     if(tab.dataset.tab === "planning") renderPlanning();
     if(tab.dataset.tab === "electives") renderMenuContent();
-    if(tab.dataset.tab === "courses") renderCourseOverview();
+    if(tab.dataset.tab === "courses"){ renderCourseOverview(); renderCourseCategoryTabs(); renderCoursesList(); }
   };
 });
 
@@ -1655,9 +1595,6 @@ document.getElementById("manageCourseSelect").addEventListener("change", ()=>{ r
 document.getElementById("saveElectiveCourseBtn").addEventListener("click", saveElectiveCourse);
 document.getElementById("deleteElectiveCourseBtn").addEventListener("click", deleteElectiveCourse);
 document.getElementById("clearElectiveCourseBtn").addEventListener("click", clearElectiveCourseForm);
-document.getElementById('courseManageCancelBtn').addEventListener('click', closeCourseManageModal);
-document.getElementById('courseManageSaveBtn').addEventListener('click', saveManagedCourse);
-document.getElementById('courseManageOverlay').addEventListener('click', (e)=>{ if(e.target.id === 'courseManageOverlay') closeCourseManageModal(); });
 
 function applyTheme(){
   document.documentElement.setAttribute("data-theme", STATE.theme);
@@ -1721,6 +1658,8 @@ function renderAll(){
   renderMenuContent();
   renderElectiveManager();
   renderCourseOverview();
+  renderCourseCategoryTabs();
+  renderCoursesList();
 }
 
 (async function init(){
@@ -1734,6 +1673,18 @@ function renderAll(){
   HISTORY_INDEX = 0;
   updateUndoRedoButtons();
 })();
+
+// QoL: press "/" to jump to the search box of whichever tab is currently open (skips if typing in a field already)
+document.addEventListener("keydown", (e)=>{
+  if(e.key !== "/") return;
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if(["INPUT","TEXTAREA","SELECT"].includes(tag)) return;
+  const activeTabName = (document.querySelector(".tab.active") || {}).dataset ? document.querySelector(".tab.active").dataset.tab : "pathway";
+  const targetId = activeTabName === "electives" ? "electiveSearchInput" : activeTabName === "courses" ? "coursesSearchInput" : "searchInput";
+  const el = document.getElementById(targetId);
+  if(el){ e.preventDefault(); el.focus(); }
+});
+
 </script>
 </body>
 </html>
