@@ -128,6 +128,7 @@
   button.transferbtn:hover{filter:brightness(1.15);}
 
   .menu-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
+  .toolbar .menu-tabs{margin-bottom:0; align-items:center;}
 
   /* Courses overview cards (three-up) */
   .overview-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:8px 0 22px;}
@@ -203,7 +204,6 @@
         <button class="iconbtn" id="redoBtn" title="Redo (Ctrl+Y)" disabled>Redo</button>
         <button class="iconbtn" id="exportBtn">Export</button>
         <button class="iconbtn" id="importBtn">Import</button>
-        <button class="iconbtn" id="resetBtn">Reset</button>
       </div>
       <input type="file" id="importFileInput" accept="application/json">
     </div>
@@ -1319,7 +1319,7 @@ function renderCoursesList(){
         <div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div>
         <div style="margin-top:8px">${choiceHtml}</div>
         <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">Prereq: ${escapeHtml(c.prereq||'None')}</div>
-        <div style="margin-top:8px"> <span class="tag">SOPHIA</span> <input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
+        <div class="sophia-row" style="margin-top:8px"><span class="tag">SOPHIA</span><input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
         <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
@@ -1656,24 +1656,6 @@ document.getElementById("importFileInput").addEventListener("change", (e)=>{
   };
   reader.readAsText(file);
   e.target.value = "";
-});
-
-document.getElementById("resetBtn").addEventListener("click", ()=>{
-  showConfirm(
-    "Reset everything",
-    "This clears all progress, transfer decisions, elective choices, notes, and custom elective courses. This cannot be undone by Undo. Continue?",
-    ()=>{
-      STATE = getDefaultState();
-      ensureStateShape();
-      applyTheme();
-      queueSave();
-      renderAll();
-      HISTORY = [ cloneState(STATE) ];
-      HISTORY_INDEX = 0;
-      LAST_SNAPSHOT = JSON.stringify(STATE);
-      updateUndoRedoButtons();
-    }
-  );
 });
 
 function renderAll(){
