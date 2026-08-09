@@ -48,7 +48,7 @@
   }
   .iconbtn:hover{filter:brightness(1.15); color:var(--text);}
 
-  .stats{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:28px 0 12px;}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:28px 0 12px;}
   .stat{background:var(--card); padding:16px 18px;}
   .stat .num{font-family:'Fraunces', serif; font-size:28px; font-weight:600; line-height:1; color:var(--text);}
   .stat .lbl{font-size:11.5px; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px;}
@@ -124,6 +124,10 @@
     font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:5px 8px; border-radius:8px;
     border:1px solid var(--line); background:var(--bg-soft); color:var(--text);
   }
+  .weekly-checklist{margin-top:10px; padding:10px 12px; background:var(--bg-soft); border:1px solid var(--line); border-radius:9px;}
+  .weekly-checklist .wc-title{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--amber); font-weight:700; margin-bottom:6px;}
+  .weekly-checklist .wc-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-soft); padding:3px 0; cursor:pointer;}
+  .weekly-checklist .wc-row input{accent-color:var(--gold); width:14px; height:14px;}
   .warn-tag{font-size:11.5px; color:var(--danger); background:var(--danger-soft); padding:4px 10px; border-radius:8px; margin-top:8px; display:inline-block;}
   textarea.notes{
     width:100%; margin-top:8px; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:8px 10px;
@@ -323,6 +327,7 @@
         <div class="inputrow"><label>UoPeople fee per direct course (USD)</label><input type="number" id="in_uopFee" value="180" min="0" step="10"></div>
         <div class="inputrow"><label>Sophia subscription cost / month (USD)</label><input type="number" id="in_sophiaCost" value="99" min="0" step="10"></div>
         <div class="inputrow"><label>Scholarship covers per-course fee?</label><input type="checkbox" id="in_scholarship" checked></div>
+        <div class="slot-note" id="cgpaLoadNote" style="margin-top:10px;"></div>
       </div>
       <div class="panel">
         <h3>What your current choices mean</h3>
@@ -592,6 +597,7 @@ function getDefaultState(){
     notes: {},
     sophiaProgress: {},
     grade: {},
+    weeklyTasks: {},
     theme: "dark",
     planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true }
   };
@@ -623,7 +629,7 @@ function getPlanningDefaults(){
 function mergeStateWithDefaults(stateData, defaultsData){
   const defaults = cloneState(defaultsData || getDefaultState());
   const state = cloneState(stateData || {});
-  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "sophiaProgress", "grade", "planning"];
+  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "sophiaProgress", "grade", "weeklyTasks", "planning"];
   nestedKeys.forEach(key=>{
     if(state[key] !== undefined){
       defaults[key] = deepMerge(defaults[key] || {}, state[key] || {});
@@ -659,6 +665,7 @@ function ensureStateShape(){
   STATE.notes = STATE.notes || {};
   STATE.sophiaProgress = STATE.sophiaProgress || {};
   STATE.grade = STATE.grade || {};
+  STATE.weeklyTasks = STATE.weeklyTasks || {};
   STATE.theme = STATE.theme || "dark";
   STATE.planning = { ...getPlanningDefaults(), ...(STATE.planning || {}) };
   STATE.electiveMenus = STATE.electiveMenus || getDefaultElectiveMenus();
@@ -794,6 +801,14 @@ const SOPHIA_PROGRESS_CYCLE = ["not-started","studying","completed","submitted",
 const SOPHIA_PROGRESS_LABEL = {"not-started":"Not started","studying":"Studying","completed":"Completed","submitted":"Submitted to UoPeople","approved":"Approved"};
 const GRADE_OPTIONS = ["","A","A-","B+","B","B-","C+","C","C-","D+","D","F"];
 const GRADE_POINTS = {"A":4.0,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
+const WEEKLY_TASK_ITEMS = [
+  {key:"reading", label:"Reading & lecture notes"},
+  {key:"discussionPost", label:"Discussion forum post"},
+  {key:"peerReply1", label:"Peer reply #1"},
+  {key:"peerReply2", label:"Peer reply #2"},
+  {key:"quiz", label:"Quiz / self-quiz"},
+  {key:"writtenAssignment", label:"Written assignment (if due this week)"},
+];
 
 let activeFilter = "all";
 let activeTransferFilter = "all";
@@ -870,9 +885,15 @@ function renderStats(){
   const donePct = Math.round((done/total)*100);
   const learningPct = Math.round((learning/total)*100);
   const gpa = computeGPA();
+  const creditsDone = done * 3;
+  const creditsTotal = total * 3;
+  const estHoursLow = learning * 8;
+  const estHoursHigh = learning * 20;
   document.getElementById("statsRail").innerHTML = `
     <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Courses done</div></div>
+    <div class="stat"><div class="num">${creditsDone}/${creditsTotal}</div><div class="lbl">Credits earned</div></div>
     <div class="stat"><div class="num">${learning}</div><div class="lbl">In progress</div></div>
+    <div class="stat"><div class="num">${learning>0 ? estHoursLow+"–"+estHoursHigh : "0"}</div><div class="lbl">Est. hrs/week right now</div></div>
     <div class="stat"><div class="num">${transferable}</div><div class="lbl">Marked transferable</div></div>
     <div class="stat"><div class="num">${plan}</div><div class="lbl">Plan to transfer</div></div>
     <div class="stat"><div class="num">${notTransferable}</div><div class="lbl">Marked not transferable</div></div>
@@ -1146,6 +1167,35 @@ function renderPathway(){
         gradeRow.appendChild(hint);
       }
       left.appendChild(gradeRow);
+    }
+
+    /* Weekly task checklist — mirrors UoPeople's standard weekly rhythm (reading, discussion post,
+       peer replies, quiz). Only shown while a course is actively "Learning"; reset it yourself
+       each new week since the tool has no calendar-week concept of its own. */
+    if(progress === "learning"){
+      const tasks = STATE.weeklyTasks[entry.o] || {};
+      const checklistWrap = document.createElement("div");
+      checklistWrap.className = "weekly-checklist";
+      checklistWrap.innerHTML = `<div class="wc-title">This week's tasks</div>`;
+      WEEKLY_TASK_ITEMS.forEach(item=>{
+        const row = document.createElement("label");
+        row.className = "wc-row";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!tasks[item.key];
+        cb.onchange = (e)=>{
+          const t = STATE.weeklyTasks[entry.o] || {};
+          t[item.key] = e.target.checked;
+          STATE.weeklyTasks[entry.o] = t;
+          queueSave();
+        };
+        row.appendChild(cb);
+        const span = document.createElement("span");
+        span.textContent = item.label;
+        row.appendChild(span);
+        checklistWrap.appendChild(row);
+      });
+      left.appendChild(checklistWrap);
     }
 
     if(entry.note){
@@ -1678,6 +1728,29 @@ function renderPlanning(){
   document.getElementById("out_recommendedSophiaCourses").textContent = recommendedSophiaCourses + " courses";
   document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
   document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
+
+  const cgpaNote = document.getElementById("cgpaLoadNote");
+  if(cgpaNote){
+    const gpa = computeGPA();
+    let maxCourses, ruleText;
+    if(gpa === null){
+      maxCourses = 2;
+      ruleText = "No graded courses yet — UoPeople's standard load is 2 courses/term until you have a CGPA on record.";
+    } else if(gpa >= 3.00){
+      maxCourses = 4;
+      ruleText = `Your CGPA (${gpa.toFixed(2)}) is ≥ 3.00 — UoPeople policy allows up to 4 courses/term.`;
+    } else if(gpa >= 2.00){
+      maxCourses = 2;
+      ruleText = `Your CGPA (${gpa.toFixed(2)}) is standard — UoPeople policy allows up to 2 courses/term (4 requires ≥3.00).`;
+    } else {
+      maxCourses = 1;
+      ruleText = `Your CGPA (${gpa.toFixed(2)}) is below 2.00 — per UoPeople policy (academic warning/probation range), you're limited to 1 course/term until it recovers.`;
+    }
+    cgpaNote.textContent = ruleText;
+    if(p.uopPace > maxCourses){
+      cgpaNote.innerHTML = ruleText + ` <b style="color:var(--danger);">Your "UoPeople courses/term" input above (${p.uopPace}) exceeds this — the term schedule below may not be registrable as planned.</b>`;
+    }
+  }
 
   renderTermSchedule(p);
 }
