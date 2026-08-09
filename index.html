@@ -48,7 +48,7 @@
   }
   .iconbtn:hover{filter:brightness(1.15); color:var(--text);}
 
-  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:28px 0 12px;}
+  .stats{display:grid; grid-template-columns:repeat(6,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin:28px 0 12px;}
   .stat{background:var(--card); padding:16px 18px;}
   .stat .num{font-family:'Fraunces', serif; font-size:28px; font-weight:600; line-height:1; color:var(--text);}
   .stat .lbl{font-size:11.5px; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px;}
@@ -111,6 +111,19 @@
   .card input.sophia-input{font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); flex:1; min-width:160px;}
   input.table-sophia-input{width:100%; min-width:150px; padding:5px 8px; font-size:12px; font-family:'IBM Plex Sans',sans-serif; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text);}
   .nextup-tag{font-size:10.5px; font-weight:700; letter-spacing:.06em; color:#1B1F2B; background:var(--gold); padding:3px 9px; border-radius:12px; margin-bottom:6px; display:inline-block;}
+  .proctored-tag{font-size:10.5px; font-weight:700; letter-spacing:.04em; color:var(--danger); background:var(--danger-soft); padding:3px 9px; border-radius:12px; margin-bottom:6px; display:inline-block;}
+  .sophiaprogressbtn{
+    font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; font-weight:600; padding:5px 11px;
+    border-radius:16px; border:1px solid var(--line); cursor:pointer; background:var(--bg-soft); color:var(--text-soft); display:block;
+  }
+  .sophiaprogressbtn.studying{border-color:var(--amber); color:var(--amber);}
+  .sophiaprogressbtn.completed, .sophiaprogressbtn.submitted{border-color:var(--gold); color:var(--gold);}
+  .sophiaprogressbtn.approved{border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
+  .grade-row{display:flex; align-items:center; gap:10px; margin-top:8px;}
+  .grade-select{
+    font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:5px 8px; border-radius:8px;
+    border:1px solid var(--line); background:var(--bg-soft); color:var(--text);
+  }
   .warn-tag{font-size:11.5px; color:var(--danger); background:var(--danger-soft); padding:4px 10px; border-radius:8px; margin-top:8px; display:inline-block;}
   textarea.notes{
     width:100%; margin-top:8px; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:8px 10px;
@@ -254,6 +267,7 @@
     <div class="toolbar">
       <div class="filters" id="transferFilterChips"></div>
       <label class="togglewrap"><input type="checkbox" id="hideDoneToggle"> Hide completed</label>
+      <label class="togglewrap"><input type="checkbox" id="proctoredOnlyToggle"> Proctored only</label>
     </div>
     <div class="rail" id="pathwayRail"></div>
   </div>
@@ -327,6 +341,15 @@
       <div class="resultrow"><span>UoPeople total modules</span><span class="v" id="out_recommendedUopCourses">-</span></div>
       <div class="resultrow"><span>Sophia pace per month</span><span class="v" id="out_sophiaPacePerMonth">-</span></div>
       <div class="resultrow"><span>Sophia total modules</span><span class="v" id="out_recommendedSophiaCourses">-</span></div>
+    </div>
+    <div class="panel" style="margin-top:16px;">
+      <h3>Term-by-term schedule preview</h3>
+      <div class="slot-note" style="margin-bottom:14px;">
+        Every course currently marked <b>Not transferable</b> or still <b>Undecided</b>, grouped into terms using
+        your "UoPeople courses / term" pace above, in pathway order (which already respects prerequisites).
+        This updates automatically as you change transfer decisions.
+      </div>
+      <div id="termScheduleContent"></div>
     </div>
   </div>
 
@@ -477,31 +500,31 @@ const PATHWAY = [
   {o:12, type:"fixed", name:"Databases 1", code:"CS 2203", prereq:"None", cat:"Major Required", sophia:"Introduction to Relational Databases"},
   {o:13, type:"fixed", name:"Communications and Networking", code:"CS 2204", prereq:"None", cat:"Major Required", sophia:"Introduction to Networking"},
   {o:14, type:"choice", menu:"natsci", cat:"Gen Ed", label:"Natural Science & Technology"},
-  {o:15, type:"fixed", name:"Web Programming 1", code:"CS 2205", prereq:"CS 1103", cat:"Major Required", sophia:"Introduction to Web Development", note:"Proctored"},
+  {o:15, type:"fixed", name:"Web Programming 1", code:"CS 2205", prereq:"CS 1103", cat:"Major Required", sophia:"Introduction to Web Development", note:"Proctored", proctored:true},
   {o:16, type:"fixed", name:"Professional Communication", code:"COM 2001", prereq:"None", cat:"Gen Ed", sophia:"Workplace Communications"},
   {o:17, type:"choice", menu:"humanities", cat:"Gen Ed", label:"Humanities #1"},
-  {o:18, type:"fixed", name:"Operating Systems 1", code:"CS 2301", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:18, type:"fixed", name:"Operating Systems 1", code:"CS 2301", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:19, type:"choice", menu:"civilization", cat:"Gen Ed", label:"Civilization Studies, Culture & Belief"},
   {o:20, type:"fixed", name:"Software Engineering 1", code:"CS 2401", prereq:"CS 1103", cat:"Major Required", sophia:"Software Engineering"},
   {o:21, type:"choice", menu:"humanities", cat:"Gen Ed", label:"Humanities #2"},
-  {o:22, type:"fixed", name:"Data Structures", code:"CS 3303", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:22, type:"fixed", name:"Data Structures", code:"CS 3303", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:23, type:"choice", menu:"socbehav", cat:"Gen Ed", label:"Social & Behavior Science #2"},
   {o:24, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #1"},
   {o:25, type:"choice", menu:"generalelective", cat:"General Elective", label:"General Elective Slot"},
-  {o:26, type:"fixed", name:"Web Programming 2", code:"CS 3305", prereq:"CS 2205", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:26, type:"fixed", name:"Web Programming 2", code:"CS 3305", prereq:"CS 2205", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:27, type:"fixed", name:"Calculus", code:"MATH 1211", prereq:"MATH 1201", cat:"Gen Ed", sophia:"Calculus I"},
-  {o:28, type:"fixed", name:"Databases 2", code:"CS 3306", prereq:"CS 2203", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:28, type:"fixed", name:"Databases 2", code:"CS 3306", prereq:"CS 2203", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:29, type:"fixed", name:"Discrete Mathematics", code:"MATH 1302", prereq:"None", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)"},
-  {o:30, type:"fixed", name:"Operating Systems 2", code:"CS 3307", prereq:"CS 2301", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:30, type:"fixed", name:"Operating Systems 2", code:"CS 3307", prereq:"CS 2301", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:31, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #2"},
   {o:32, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #3"},
   {o:33, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #4"},
-  {o:34, type:"fixed", name:"Comparative Programming Languages", code:"CS 4402", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:34, type:"fixed", name:"Comparative Programming Languages", code:"CS 4402", prereq:"CS 1103", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:35, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #5"},
   {o:36, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #6"},
   {o:37, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #7"},
   {o:38, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #8"},
-  {o:39, type:"fixed", name:"Data Mining and Machine Learning", code:"CS 4407", prereq:"CS 3303", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored"},
+  {o:39, type:"fixed", name:"Data Mining and Machine Learning", code:"CS 4407", prereq:"CS 3303", cat:"Major Required", sophia:"Take at UoPeople (Direct CS Core)", note:"Proctored", proctored:true},
   {o:40, type:"choice", menu:"majorelective", cat:"Major Elective", label:"Major Elective #9"},
 ];
 
@@ -567,6 +590,8 @@ function getDefaultState(){
     electiveMenus: null,
     freeText: {},
     notes: {},
+    sophiaProgress: {},
+    grade: {},
     theme: "dark",
     planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true }
   };
@@ -598,7 +623,7 @@ function getPlanningDefaults(){
 function mergeStateWithDefaults(stateData, defaultsData){
   const defaults = cloneState(defaultsData || getDefaultState());
   const state = cloneState(stateData || {});
-  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "planning"];
+  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "sophiaProgress", "grade", "planning"];
   nestedKeys.forEach(key=>{
     if(state[key] !== undefined){
       defaults[key] = deepMerge(defaults[key] || {}, state[key] || {});
@@ -632,6 +657,8 @@ function ensureStateShape(){
   STATE.sophiaOverride = STATE.sophiaOverride || {};
   STATE.freeText = STATE.freeText || {};
   STATE.notes = STATE.notes || {};
+  STATE.sophiaProgress = STATE.sophiaProgress || {};
+  STATE.grade = STATE.grade || {};
   STATE.theme = STATE.theme || "dark";
   STATE.planning = { ...getPlanningDefaults(), ...(STATE.planning || {}) };
   STATE.electiveMenus = STATE.electiveMenus || getDefaultElectiveMenus();
@@ -763,11 +790,16 @@ const PROGRESS_CYCLE = ["to-learn","learning","done"];
 const PROGRESS_LABEL = {"to-learn":"To learn","learning":"Learning","done":"Done"};
 const TRANSFER_CYCLE = ["undecided","transferable","plan","not-transferable"];
 const TRANSFER_LABEL = {"undecided":"Undecided","transferable":"Transferable","plan":"Plan to transfer","not-transferable":"Not transferable"};
+const SOPHIA_PROGRESS_CYCLE = ["not-started","studying","completed","submitted","approved"];
+const SOPHIA_PROGRESS_LABEL = {"not-started":"Not started","studying":"Studying","completed":"Completed","submitted":"Submitted to UoPeople","approved":"Approved"};
+const GRADE_OPTIONS = ["","A","A-","B+","B","B-","C+","C","C-","D+","D","F"];
+const GRADE_POINTS = {"A":4.0,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
 
 let activeFilter = "all";
 let activeTransferFilter = "all";
 let searchTerm = "";
 let hideDone = false;
+let proctoredOnly = false;
 
 function getNextUpOrder(){
   for(const entry of PATHWAY){
@@ -807,6 +839,22 @@ function getDuplicateChoiceOrders(){
   return dupes;
 }
 
+function computeGPA(){
+  // Only courses actually taken directly at UoPeople carry a UoPeople grade — Sophia-transferred
+  // credits don't get a letter grade or count toward CGPA there.
+  let totalPoints = 0;
+  let totalCourses = 0;
+  PATHWAY.forEach(entry=>{
+    const grade = STATE.grade[entry.o];
+    const transferDecision = STATE.transferDecision[entry.o] || "undecided";
+    if(!grade || GRADE_POINTS[grade] === undefined) return;
+    if(transferDecision === "transferable") return;
+    totalPoints += GRADE_POINTS[grade];
+    totalCourses++;
+  });
+  return totalCourses > 0 ? (totalPoints / totalCourses) : null;
+}
+
 function renderStats(){
   let done=0, learning=0, transferable=0, plan=0, notTransferable=0;
   PATHWAY.forEach(entry=>{
@@ -821,12 +869,14 @@ function renderStats(){
   const total = PATHWAY.length;
   const donePct = Math.round((done/total)*100);
   const learningPct = Math.round((learning/total)*100);
+  const gpa = computeGPA();
   document.getElementById("statsRail").innerHTML = `
     <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Courses done</div></div>
     <div class="stat"><div class="num">${learning}</div><div class="lbl">In progress</div></div>
     <div class="stat"><div class="num">${transferable}</div><div class="lbl">Marked transferable</div></div>
     <div class="stat"><div class="num">${plan}</div><div class="lbl">Plan to transfer</div></div>
     <div class="stat"><div class="num">${notTransferable}</div><div class="lbl">Marked not transferable</div></div>
+    <div class="stat"><div class="num">${gpa===null ? "—" : gpa.toFixed(2)}</div><div class="lbl">CGPA (UoPeople courses)</div></div>
   `;
 
   const cats = ["major","elective","gened"];
@@ -941,6 +991,7 @@ function renderPathway(){
     if(activeFilter!=="all" && c.cat!==activeFilter) return;
     if(activeTransferFilter!=="all" && transferDecision!==activeTransferFilter) return;
     if(hideDone && progress==="done") return;
+    if(proctoredOnly && !entry.proctored) return;
     if(!matchesSearch(entry, c)) return;
     anyVisible = true;
 
@@ -964,6 +1015,12 @@ function renderPathway(){
       tag.className = "nextup-tag";
       tag.textContent = "NEXT UP";
       left.appendChild(tag);
+    }
+    if(entry.proctored){
+      const ptag = document.createElement("div");
+      ptag.className = "proctored-tag";
+      ptag.textContent = "PROCTORED — arrange a proctor before registering";
+      left.appendChild(ptag);
     }
 
     if(entry.type === "choice"){
@@ -1049,6 +1106,47 @@ function renderPathway(){
     sophiaInput.oninput = (e)=>{ STATE.sophiaOverride[entry.o] = e.target.value; queueSave(); };
     sophiaRow.appendChild(sophiaInput);
     left.appendChild(sophiaRow);
+
+    /* Sophia completion sub-tracker — only meaningful for courses you're actually routing through Sophia */
+    if(transferDecision === "transferable" || transferDecision === "plan"){
+      const sp = STATE.sophiaProgress[entry.o] || "not-started";
+      const spBtn = document.createElement("button");
+      spBtn.className = "sophiaprogressbtn " + sp;
+      spBtn.title = "Click to advance your Sophia completion status";
+      spBtn.textContent = "Sophia: " + SOPHIA_PROGRESS_LABEL[sp];
+      spBtn.style.marginTop = "8px";
+      spBtn.onclick = ()=>{
+        const idx = SOPHIA_PROGRESS_CYCLE.indexOf(sp);
+        STATE.sophiaProgress[entry.o] = SOPHIA_PROGRESS_CYCLE[(idx+1)%SOPHIA_PROGRESS_CYCLE.length];
+        queueSave(); renderPathway();
+      };
+      left.appendChild(spBtn);
+    }
+
+    /* Grade + running GPA — only relevant once a course is actually Done, and only counted toward
+       GPA if it isn't marked "transferable" (Sophia-transferred credits don't carry a UoPeople grade). */
+    if(progress === "done"){
+      const gradeRow = document.createElement("div");
+      gradeRow.className = "grade-row";
+      const gradeSelect = document.createElement("select");
+      gradeSelect.className = "grade-select";
+      GRADE_OPTIONS.forEach(g=>{
+        const o = document.createElement("option");
+        o.value = g;
+        o.textContent = g === "" ? "Grade (optional)" : g;
+        o.selected = (STATE.grade[entry.o] || "") === g;
+        gradeSelect.appendChild(o);
+      });
+      gradeSelect.onchange = (e)=>{ STATE.grade[entry.o] = e.target.value; queueSave(); renderStats(); };
+      gradeRow.appendChild(gradeSelect);
+      if(transferDecision === "transferable"){
+        const hint = document.createElement("span");
+        hint.style = "font-size:11px; color:var(--text-soft);";
+        hint.textContent = "Won't count toward CGPA (Sophia transfer)";
+        gradeRow.appendChild(hint);
+      }
+      left.appendChild(gradeRow);
+    }
 
     if(entry.note){
       const noteEl = document.createElement("div");
@@ -1580,6 +1678,48 @@ function renderPlanning(){
   document.getElementById("out_recommendedSophiaCourses").textContent = recommendedSophiaCourses + " courses";
   document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
   document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
+
+  renderTermSchedule(p);
+}
+
+function renderTermSchedule(p){
+  const container = document.getElementById("termScheduleContent");
+  if(!container) return;
+
+  // Courses you'll actually register for at UoPeople: not-transferable, or still undecided
+  // (since undecided courses default to "take it directly" until you say otherwise).
+  const directCourses = PATHWAY.filter(entry=>{
+    const t = STATE.transferDecision[entry.o] || "undecided";
+    return t === "not-transferable" || t === "undecided";
+  });
+
+  if(directCourses.length === 0){
+    container.innerHTML = `<div class="empty-note">Every course is currently marked Transferable or Plan to transfer — nothing left to schedule directly at UoPeople.</div>`;
+    return;
+  }
+
+  const perTerm = Math.max(1, Math.round(p.uopPace || 2));
+  const terms = [];
+  for(let i=0; i<directCourses.length; i+=perTerm){
+    terms.push(directCourses.slice(i, i+perTerm));
+  }
+
+  const rows = terms.map((termCourses, idx)=>{
+    const courseList = termCourses.map(entry=>{
+      const c = resolveCourse(entry);
+      const proctoredTag = entry.proctored ? ` <span style="color:var(--danger); font-size:11px; font-weight:700;">PROCTORED</span>` : "";
+      const doneTag = (STATE.progress[entry.o]||"to-learn")==="done" ? ` <span style="color:var(--teal); font-size:11px;">✓ done</span>` : "";
+      return `<div style="padding:4px 0;">#${entry.o} ${escapeHtml(c.name)}${c.code!=="—" ? " ("+escapeHtml(c.code)+")" : ""}${proctoredTag}${doneTag}</div>`;
+    }).join("");
+    return `<tr><td class="mono" style="white-space:nowrap; vertical-align:top;">Term ${idx+1}</td><td>${courseList}</td></tr>`;
+  }).join("");
+
+  container.innerHTML = `
+    <table>
+      <thead><tr><th>Term</th><th>Courses (${directCourses.length} total, ~${perTerm}/term, ${terms.length} terms)</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
 }
 
 function wirePlanningInputs(){
@@ -1648,6 +1788,7 @@ document.querySelectorAll(".tab").forEach(tab=>{
 document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTerm = e.target.value; renderPathway(); });
 document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
 document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
+document.getElementById("proctoredOnlyToggle").addEventListener("change", (e)=>{ proctoredOnly = e.target.checked; renderPathway(); });
 
 document.getElementById("manageMenuSelect").addEventListener("change", ()=>{ renderElectiveManager(); });
 document.getElementById("manageCourseSelect").addEventListener("change", ()=>{ renderElectiveManager(); });
