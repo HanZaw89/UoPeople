@@ -52,7 +52,7 @@
   .stat{background:var(--card); padding:16px 18px;}
   .stat .num{font-family:'Fraunces', serif; font-size:28px; font-weight:600; line-height:1; color:var(--text);}
   .stat .lbl{font-size:11.5px; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.06em; margin-top:6px;}
-  .catbreak{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px;}
+  .catbreak{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:18px;}
   .catbreak .cb{background:var(--bg-soft); padding:10px 14px;}
   .catbreak .cb .t{font-size:11px; color:var(--text-soft); text-transform:uppercase; letter-spacing:.05em;}
   .catbreak .cb .v{font-size:15px; font-weight:600; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
@@ -94,6 +94,11 @@
   .node.done .dot{background:var(--teal); border-color:var(--teal); color:var(--bg);}
   .node.learning .dot{background:var(--amber); border-color:var(--amber); color:var(--bg);}
   .node.nextup .card{outline:2px solid var(--gold); box-shadow:0 0 0 4px rgba(217,169,78,0.12);}
+  .node.jump-flash .card{animation: jump-flash-anim 1.6s ease-out;}
+  @keyframes jump-flash-anim{
+    0%{ box-shadow:0 0 0 8px rgba(217,169,78,0.35); }
+    100%{ box-shadow:0 0 0 4px rgba(217,169,78,0.12); }
+  }
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;}
   .card .left{flex:1; min-width:240px;}
@@ -216,6 +221,7 @@
     <div class="progress-legend">
       <span><span class="dot done"></span><span id="progressLabel">0 done</span></span>
       <span><span class="dot learning"></span><span id="learningLabel">0 in progress</span></span>
+      <span id="jumpToNextWrap" style="display:none;"><a href="#" id="jumpToNextLink" style="color:var(--gold); font-weight:600; text-decoration:none;">Jump to next &rarr;</a></span>
     </div>
     <span id="progressPct">0%</span>
   </div>
@@ -617,7 +623,6 @@ const REMOTE_STATE_URL = "./pathway-state.json";
 let STATE = getDefaultState();
 let saveTimer = null;
 let saveAttemptToken = 0;
-let remotePersistenceAvailable = false;
 let remoteDefaults = null;
 
 function ensureStateShape(){
@@ -666,7 +671,6 @@ async function loadState(){
         const localPayload = JSON.parse(res.value);
         const localState = localPayload.state || localPayload;
         STATE = mergeStateWithDefaults(localState, localPayload.defaults || remoteDefaults || getDefaultState());
-        remotePersistenceAvailable = false;
       }
     } else {
       const local = localStorage.getItem(STORAGE_KEY);
@@ -674,7 +678,6 @@ async function loadState(){
         const localPayload = JSON.parse(local);
         const localState = localPayload.state || localPayload;
         STATE = mergeStateWithDefaults(localState, localPayload.defaults || remoteDefaults || getDefaultState());
-        remotePersistenceAvailable = false;
       }
     }
   }catch(e){ /* fallback to initial */ }
@@ -690,11 +693,9 @@ async function loadState(){
         if(!STATE || Object.keys(STATE).length <= 1 || !STATE.planning || !STATE.planning.sophiaPace){
           STATE = mergeStateWithDefaults(persistedState, remoteDefaults || getDefaultState());
         }
-        remotePersistenceAvailable = true;
       }
     }
   }catch(e){
-    remotePersistenceAvailable = false;
   }
   ensureStateShape();
 }
@@ -828,11 +829,11 @@ function renderStats(){
     <div class="stat"><div class="num">${notTransferable}</div><div class="lbl">Marked not transferable</div></div>
   `;
 
-  const cats = ["Major Required","Major Elective","General Elective","Gen Ed"];
-  const catHtml = cats.map(cat=>{
-    const inCat = PATHWAY.filter(e=>e.cat===cat);
+  const cats = ["major","elective","gened"];
+  const catHtml = cats.map(key=>{
+    const inCat = PATHWAY.filter(e=>OFFICIAL_CATEGORY[e.o]===key);
     const doneCat = inCat.filter(e=>(STATE.progress[e.o]||"to-learn")==="done").length;
-    return `<div class="cb"><div class="t">${cat}</div><div class="v">${doneCat}/${inCat.length}</div></div>`;
+    return `<div class="cb"><div class="t">${OFFICIAL_LABEL[key]}</div><div class="v">${doneCat}/${OFFICIAL_TOTAL[key]}</div></div>`;
   }).join("");
   document.getElementById("catBreak").innerHTML = catHtml;
 
@@ -841,6 +842,41 @@ function renderStats(){
   document.getElementById("progressLabel").textContent = `${done} done`;
   document.getElementById("learningLabel").textContent = `${learning} in progress`;
   document.getElementById("progressPct").textContent = donePct+"% of "+total;
+
+  const nextOrder = getNextUpOrder();
+  const jumpWrap = document.getElementById("jumpToNextWrap");
+  if(nextOrder !== null){
+    jumpWrap.style.display = "inline";
+    document.getElementById("jumpToNextLink").onclick = (e)=>{
+      e.preventDefault();
+      // switch to the Pathway tab and clear any filter/search that would hide the target card
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      const pathwayTab = document.querySelector('.tab[data-tab="pathway"]');
+      if(pathwayTab) pathwayTab.classList.add("active");
+      ["pathway","electives","planning","courses"].forEach(name=>{
+        const el = document.getElementById("tab-"+name);
+        if(el) el.style.display = (name==="pathway") ? "block":"none";
+      });
+      activeFilter = "all";
+      activeTransferFilter = "all";
+      hideDone = false;
+      searchTerm = "";
+      const searchInputEl = document.getElementById("searchInput");
+      if(searchInputEl) searchInputEl.value = "";
+      const hideDoneEl = document.getElementById("hideDoneToggle");
+      if(hideDoneEl) hideDoneEl.checked = false;
+      renderFilters();
+      renderPathway();
+      const target = document.getElementById("node-"+nextOrder);
+      if(target){
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.classList.add("jump-flash");
+        setTimeout(()=>target.classList.remove("jump-flash"), 1600);
+      }
+    };
+  } else {
+    jumpWrap.style.display = "none";
+  }
 
   renderPlanning();
   renderCourseOverview();
@@ -964,7 +1000,7 @@ function renderPathway(){
       if(entry.menu === "generalelective"){
         const noteEl = document.createElement("div");
         noteEl.style = "font-size:12px; color:var(--text-soft); margin-top:8px; line-height:1.5;";
-        noteEl.textContent = "Qualified General Electives include any General Education course plus any course or elective from Business Administration, Health Science, or Computer Science.";
+        noteEl.textContent = "Qualified General Electives include any General Education course, plus electives from Business Administration or Health Science, and a handful of individual math/writing/communication courses. Computer Science courses aren't offered here — they're already required elsewhere in this same pathway, so re-offering them would let a course get double-counted.";
         left.appendChild(noteEl);
       }
     } else if(entry.type === "freetext"){
@@ -1455,6 +1491,24 @@ function deleteElectiveCourse(){
     const idx = Number(selectedCourseValue);
     if(!Number.isNaN(idx) && menu.options[idx]){
       menu.options.splice(idx, 1);
+
+      // Deleting shifts every later option down by one index. Any pathway slot using this
+      // same menu must be re-pointed to follow its actual course, not silently slide onto
+      // whatever course happened to shift into its old index number.
+      let resetCount = 0;
+      PATHWAY.forEach(entry=>{
+        if(entry.type !== "choice" || entry.menu !== menuKey) return;
+        const current = STATE.choice[entry.o] ?? 0;
+        if(current === idx){
+          STATE.choice[entry.o] = 0; // its course was the one deleted — fall back to the first option
+          resetCount++;
+        } else if(current > idx){
+          STATE.choice[entry.o] = current - 1; // follow the shift so it still points to the same course
+        }
+      });
+      if(resetCount > 0){
+        showAlert("Heads up", `${resetCount} pathway slot(s) had this exact course selected and were reset to the first option in "${menu.label}" — please review them.`);
+      }
     }
   }
 
@@ -1647,6 +1701,7 @@ document.getElementById("importFileInput").addEventListener("change", (e)=>{
       const parsed = JSON.parse(evt.target.result);
       STATE = parsed;
       ensureStateShape();
+      normalizeChoiceSelections();
       applyTheme();
       queueSave(); renderAll();
       showAlert("Import Successful", "Your pathway state has been restored.");
