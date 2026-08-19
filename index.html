@@ -13,6 +13,7 @@
     --bg:#101218; --bg-soft:#161923; --card:#1B1F2B; --line:#2B303D;
     --text:#EDEBE3; --text-soft:#9AA0AE;
     --gold:#D9A94E; --amber:#E0A64B; --amber-soft:#3A2E1A;
+    --gold-soft:#3A311F;
     --teal:#4FB89D; --teal-soft:#183430;
     --slate:#767C8A; --slate-soft:#232733;
     --danger:#E07A6B; --danger-soft:#3A2420;
@@ -21,6 +22,7 @@
     --bg:#F5F1E7; --bg-soft:#EFE9DA; --card:#FFFDF8; --line:#DCD4C0;
     --text:#1B2740; --text-soft:#5B6478;
     --gold:#A6791E; --amber:#B5771F; --amber-soft:#F1E1BE;
+    --gold-soft:#F1E4C4;
     --teal:#2F6F5E; --teal-soft:#DCEAE4;
     --slate:#8B8F98; --slate-soft:#E7E6E3;
     --danger:#B5453A; --danger-soft:#F1E1DD;
@@ -56,7 +58,7 @@
   .catbreak .cb{background:var(--bg-soft); padding:10px 14px;}
   .catbreak .cb .t{font-size:11px; color:var(--text-soft); text-transform:uppercase; letter-spacing:.05em;}
   .catbreak .cb .v{font-size:15px; font-weight:600; margin-top:3px; font-family:'IBM Plex Mono',monospace;}
-  .progressbar{height:10px; border-radius:5px; background:var(--slate-soft); overflow:hidden; margin-top:12px; display:flex;}
+  .progressbar{height:10px; border-radius:5px; background:var(--slate-soft); overflow:hidden; margin-top:12px; display:flex; position:relative;}
   .progressbar .seg{height:100%; transition:width .4s ease; flex-shrink:0;}
   .progressbar .seg.seg-done{background:linear-gradient(90deg,var(--teal),var(--gold));}
   .progressbar .seg.seg-learning{
@@ -64,6 +66,32 @@
     background-size:34px 34px;
     animation: progress-stripes 1.4s linear infinite;
   }
+  .pace-section{margin-top:22px; padding:18px 20px; background:var(--card); border:1px solid var(--line); border-radius:12px; display:none;}
+  .pace-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; flex-wrap:wrap; gap:6px;}
+  .pace-header h3{font-size:15px;}
+  .pace-asof{font-size:11.5px; color:var(--text-soft);}
+  .pace-row{margin-bottom:16px;}
+  .pace-row:last-of-type{margin-bottom:0;}
+  .pace-label{font-size:12.5px; font-weight:600; margin-bottom:6px; display:flex; justify-content:space-between;}
+  .pace-label .track-tag{font-size:10px; font-weight:700; letter-spacing:.04em; padding:2px 8px; border-radius:10px;}
+  .pace-label .track-tag.sophia{color:var(--gold); background:var(--gold-soft);}
+  .pace-label .track-tag.uop{color:var(--teal); background:var(--teal-soft);}
+  .pace-bar{height:14px; border-radius:7px; background:var(--slate-soft); overflow:hidden; position:relative;}
+  .pace-fill{height:100%; transition:width .4s ease; border-radius:7px;}
+  .pace-fill.sophia{background:linear-gradient(90deg,#8a6a1f,var(--gold));}
+  .pace-fill.uop{background:linear-gradient(90deg,var(--teal),#7fd6c0);}
+  .pace-marker{
+    position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--text); z-index:5;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.3);
+  }
+  .pace-marker::after{
+    content:"today"; position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    font-size:9px; font-weight:700; color:var(--text-soft); white-space:nowrap;
+  }
+  .pace-text{font-size:12px; margin-top:8px; color:var(--text-soft);}
+  .pace-text.ahead{color:var(--teal);}
+  .pace-text.behind{color:var(--danger);}
+  .pace-text b{color:inherit;}
   @keyframes progress-stripes{ from{ background-position:0 0; } to{ background-position:34px 0; } }
   .progress-caption{display:flex; justify-content:space-between; font-size:12.5px; color:var(--text-soft); margin-top:6px;}
   .progress-legend{display:flex; gap:14px; align-items:center;}
@@ -243,6 +271,23 @@
     <span id="progressPct">0%</span>
   </div>
 
+  <div id="paceSection" class="pace-section">
+    <div class="pace-header">
+      <h3>Progress vs. Plan</h3>
+      <span id="paceAsOf" class="pace-asof"></span>
+    </div>
+    <div class="pace-row">
+      <div class="pace-label"><span><span class="track-tag sophia">SOPHIA</span> Sophia Learning courses</span><span id="sophiaPaceCount"></span></div>
+      <div class="pace-bar"><div id="sophiaActualFill" class="pace-fill sophia" style="width:0%"></div><div id="sophiaExpectedMarker" class="pace-marker" style="left:0%; display:none;"></div></div>
+      <div id="sophiaPaceText" class="pace-text"></div>
+    </div>
+    <div class="pace-row">
+      <div class="pace-label"><span><span class="track-tag uop">UOPEOPLE</span> Direct UoPeople courses</span><span id="uopPaceCount"></span></div>
+      <div class="pace-bar"><div id="uopActualFill" class="pace-fill uop" style="width:0%"></div><div id="uopExpectedMarker" class="pace-marker" style="left:0%; display:none;"></div></div>
+      <div id="uopPaceText" class="pace-text"></div>
+    </div>
+  </div>
+
   <div class="tabs">
     <div class="tab active" data-tab="pathway">Pathway</div>
     <div class="tab" data-tab="courses">Courses</div>
@@ -321,6 +366,7 @@
     <div class="plan-grid">
       <div class="panel">
         <h3>Your assumptions</h3>
+        <div class="inputrow"><label>Plan/term start date</label><input type="date" id="in_startDate"></div>
         <div class="inputrow"><label>Sophia courses completed / month</label><input type="number" id="in_sophiaPace" value="2" min="0.5" step="0.5"></div>
         <div class="inputrow"><label>UoPeople courses / term (avg)</label><input type="number" id="in_uopPace" value="2.5" min="1" step="0.5"></div>
         <div class="inputrow"><label>UoPeople terms / year</label><input type="number" id="in_termsPerYear" value="5" min="1" step="1"></div>
@@ -599,7 +645,7 @@ function getDefaultState(){
     grade: {},
     weeklyTasks: {},
     theme: "dark",
-    planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true }
+    planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true, startDate: "" }
   };
 }
 
@@ -623,7 +669,7 @@ function deepMerge(target, source){
 }
 
 function getPlanningDefaults(){
-  return { sophiaPace:2, uopPace:2.5, termsPerYear:5, targetMonths:60, uopFee:180, sophiaCost:99, scholarship:true };
+  return { sophiaPace:2, uopPace:2.5, termsPerYear:5, targetMonths:60, uopFee:180, sophiaCost:99, scholarship:true, startDate:"" };
 }
 
 function mergeStateWithDefaults(stateData, defaultsData){
@@ -870,6 +916,118 @@ function computeGPA(){
   return totalCourses > 0 ? (totalPoints / totalCourses) : null;
 }
 
+function renderSinglePaceBar(prefix, label, actualDone, actualTotal, expectedFraction, elapsedMonths){
+  const fillEl = document.getElementById(prefix+"ActualFill");
+  const markerEl = document.getElementById(prefix+"ExpectedMarker");
+  const textEl = document.getElementById(prefix+"PaceText");
+  const countEl = document.getElementById(prefix+"PaceCount");
+  if(!fillEl || !markerEl || !textEl) return;
+
+  const actualFraction = actualTotal > 0 ? actualDone / actualTotal : 0;
+  fillEl.style.width = (actualFraction*100) + "%";
+  countEl.textContent = `${actualDone} / ${actualTotal}`;
+
+  if(elapsedMonths === null){
+    markerEl.style.display = "none";
+    textEl.textContent = `${actualDone} of ${actualTotal} done.`;
+    textEl.className = "pace-text";
+    return;
+  }
+
+  const expectedCourses = Math.max(0, Math.min(actualTotal, expectedFraction * actualTotal));
+  markerEl.style.display = actualTotal > 0 ? "block" : "none";
+  markerEl.style.left = (Math.min(1, Math.max(0, expectedFraction)) * 100) + "%";
+
+  const delta = actualDone - expectedCourses;
+  const expectedRounded = Math.round(expectedCourses*10)/10;
+
+  if(elapsedMonths < 0){
+    textEl.className = "pace-text";
+    textEl.textContent = `Hasn't started yet in your plan.`;
+  } else if(actualTotal === 0){
+    textEl.className = "pace-text";
+    textEl.textContent = `No courses currently on this track.`;
+  } else if(Math.abs(delta) < 1){
+    textEl.className = "pace-text";
+    textEl.textContent = `On track — expected ~${expectedRounded} done by now, you're at ${actualDone}.`;
+  } else if(delta < 0){
+    textEl.className = "pace-text behind";
+    textEl.textContent = `Behind — expected ~${expectedRounded} done by now, you're at ${actualDone} (${Math.abs(delta).toFixed(1)} behind).`;
+  } else {
+    textEl.className = "pace-text ahead";
+    textEl.textContent = `Ahead — expected ~${expectedRounded} done by now, you're at ${actualDone} (${delta.toFixed(1)} ahead).`;
+  }
+}
+
+function renderPaceComparison(){
+  const section = document.getElementById("paceSection");
+  if(!section) return;
+
+  const p = STATE.planning || getPlanningDefaults();
+  const startDateStr = p.startDate;
+  const startDate = startDateStr ? new Date(startDateStr + "T00:00:00") : null;
+
+  if(!startDateStr || !startDate || isNaN(startDate.getTime())){
+    section.style.display = "none";
+    return;
+  }
+  section.style.display = "block";
+
+  const now = new Date();
+  const msPerMonth = 1000 * 60 * 60 * 24 * 30.4; // consistent with the ~30.4 days/month used elsewhere in this planner
+  const elapsedMonths = (now.getTime() - startDate.getTime()) / msPerMonth;
+
+  document.getElementById("paceAsOf").textContent = `As of ${now.toLocaleDateString()} — plan started ${startDate.toLocaleDateString()}`;
+
+  // Sophia and UoPeople tracks, using the exact same definitions as the rest of the planner:
+  // Sophia track = courses marked Transferable or Plan to transfer; "done" = either the dedicated
+  // Sophia sub-status reaching Completed/Submitted/Approved, OR the course's own status being
+  // marked Done directly — either signal means you've actually finished it, so either counts.
+  // UoPeople track = everything else (Not transferable or still Undecided, matching the Term
+  // Schedule preview); "done" = course status Done.
+  let sophiaTotal = 0, sophiaDone = 0, uopTotal = 0, uopDone = 0;
+  PATHWAY.forEach(entry=>{
+    const t = STATE.transferDecision[entry.o] || "undecided";
+    if(t === "transferable" || t === "plan"){
+      sophiaTotal++;
+      const sp = STATE.sophiaProgress[entry.o] || "not-started";
+      const sophiaSubDone = (sp === "completed" || sp === "submitted" || sp === "approved");
+      const overallDone = (STATE.progress[entry.o] || "to-learn") === "done";
+      if(sophiaSubDone || overallDone) sophiaDone++;
+    } else {
+      uopTotal++;
+      if((STATE.progress[entry.o] || "to-learn") === "done") uopDone++;
+    }
+  });
+
+  // Theoretical phase model — the same sequential Sophia-then-UoPeople assumption already used by
+  // "Estimated total time" elsewhere in Planning: you're expected to clear the whole Sophia track
+  // first, then the whole UoPeople track. Elapsed time splits across those two windows.
+  const sophiaMonths = p.sophiaPace > 0 ? sophiaTotal / p.sophiaPace : 0;
+  const perTerm = Math.max(1, p.uopPace || 2);
+  const uopTerms = uopTotal > 0 ? Math.ceil(uopTotal / perTerm) : 0;
+  const uopMonths = p.termsPerYear > 0 ? (uopTerms / p.termsPerYear) * 12 : 0;
+
+  let sophiaExpectedFraction, uopExpectedFraction;
+  if(elapsedMonths < 0){
+    sophiaExpectedFraction = 0;
+    uopExpectedFraction = 0;
+  } else if(sophiaMonths <= 0){
+    sophiaExpectedFraction = 1;
+    uopExpectedFraction = uopMonths > 0 ? Math.min(1, elapsedMonths / uopMonths) : 0;
+  } else if(elapsedMonths <= sophiaMonths){
+    sophiaExpectedFraction = elapsedMonths / sophiaMonths;
+    uopExpectedFraction = 0;
+  } else {
+    sophiaExpectedFraction = 1;
+    uopExpectedFraction = uopMonths > 0 ? Math.min(1, (elapsedMonths - sophiaMonths) / uopMonths) : 0;
+  }
+
+  renderSinglePaceBar("sophia", "Sophia Learning", sophiaDone, sophiaTotal, sophiaExpectedFraction, elapsedMonths);
+  renderSinglePaceBar("uop", "Direct UoPeople", uopDone, uopTotal, uopExpectedFraction, elapsedMonths);
+}
+
+
 function renderStats(){
   let done=0, learning=0, transferable=0, plan=0, notTransferable=0;
   PATHWAY.forEach(entry=>{
@@ -948,6 +1106,8 @@ function renderStats(){
   } else {
     jumpWrap.style.display = "none";
   }
+
+  renderPaceComparison();
 
   renderPlanning();
   renderCourseOverview();
@@ -1481,6 +1641,7 @@ function renderCoursesList(){
   const container = document.getElementById('coursesList');
   if(!container) return;
   const term = (coursesSearchTerm||'').toLowerCase();
+  const dupeOrders = getDuplicateChoiceOrders();
   const rows = PATHWAY.filter(e=>OFFICIAL_CATEGORY[e.o]===activeCourseCategory).filter(entry=>{
     if(!term) return true;
     const c = resolveCourse(entry);
@@ -1498,12 +1659,42 @@ function renderCoursesList(){
 
     const sVal = STATE.sophiaOverride[entry.o] !== undefined ? STATE.sophiaOverride[entry.o] : (c.sophia||'');
 
+    const proctoredHtml = entry.proctored ? `<div class="proctored-tag">PROCTORED — arrange a proctor before registering</div>` : "";
+
+    const dupeHtml = (entry.menu === "majorelective" && dupeOrders.has(entry.o))
+      ? `<div class="warn-tag">Duplicate pick — another slot has this same course</div>` : "";
+
+    let prereqWarnHtml = "";
+    if(entry.type === "fixed" && c.prereq && c.prereq !== "None" && CODE_TO_ORDER[c.prereq]){
+      const prereqOrder = CODE_TO_ORDER[c.prereq];
+      const prereqDone = (STATE.progress[prereqOrder] || "to-learn") === "done";
+      if(!prereqDone && progress !== "to-learn"){
+        prereqWarnHtml = `<div class="warn-tag">Prerequisite ${escapeHtml(c.prereq)} isn't marked Done yet</div>`;
+      }
+    }
+
+    const sophiaSubHtml = (transferDecision === "transferable" || transferDecision === "plan") ? (()=>{
+      const sp = STATE.sophiaProgress[entry.o] || "not-started";
+      return `<button data-order="${entry.o}" class="sophiaprogressbtn ${sp} table-sophiaprogress-btn" style="margin-top:8px;">Sophia: ${SOPHIA_PROGRESS_LABEL[sp]}</button>`;
+    })() : "";
+
+    const gradeHtml = progress === "done" ? (()=>{
+      const opts = GRADE_OPTIONS.map(g=>`<option value="${g}" ${((STATE.grade[entry.o]||"")===g)?"selected":""}>${g===""?"Grade (optional)":g}</option>`).join('');
+      const hint = transferDecision === "transferable" ? `<span style="font-size:11px; color:var(--text-soft);">Won't count toward CGPA (Sophia transfer)</span>` : "";
+      return `<div class="grade-row"><select data-order="${entry.o}" class="grade-select table-grade-select">${opts}</select>${hint}</div>`;
+    })() : "";
+
     return `<div class="card" style="margin-bottom:12px; align-items:flex-start;">
       <div style="flex:1; min-width:220px;">
         <div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div>
+        ${proctoredHtml}
         <div style="margin-top:8px">${choiceHtml}</div>
         <div style="margin-top:8px; font-size:13px; color:var(--text-soft);">Prereq: ${escapeHtml(c.prereq||'None')}</div>
+        ${dupeHtml}
+        ${prereqWarnHtml}
         <div class="sophia-row" style="margin-top:8px"><span class="tag">SOPHIA</span><input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
+        ${sophiaSubHtml}
+        ${gradeHtml}
         <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
@@ -1526,6 +1717,21 @@ function renderCoursesList(){
   container.querySelectorAll('.table-sophia-input').forEach(inp=>{
     inp.addEventListener('input',(e)=>{ STATE.sophiaOverride[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
   });
+  container.querySelectorAll('.table-sophiaprogress-btn').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      const ord = Number(e.target.dataset.order);
+      const sp = STATE.sophiaProgress[ord] || "not-started";
+      const idx = SOPHIA_PROGRESS_CYCLE.indexOf(sp);
+      STATE.sophiaProgress[ord] = SOPHIA_PROGRESS_CYCLE[(idx+1)%SOPHIA_PROGRESS_CYCLE.length];
+      queueSave(); renderCoursesList(); renderStats();
+    });
+  });
+  container.querySelectorAll('.table-grade-select').forEach(sel=>{
+    sel.addEventListener('change',(e)=>{
+      STATE.grade[Number(e.target.dataset.order)] = e.target.value;
+      queueSave(); renderStats();
+    });
+  });
   container.querySelectorAll('.notes').forEach(txt=>{
     txt.addEventListener('input',(e)=>{ STATE.notes[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
   });
@@ -1538,7 +1744,7 @@ function renderCoursesList(){
       const p=STATE.progress[ord]||'to-learn';
       const idx = PROGRESS_CYCLE.indexOf(p);
       STATE.progress[ord]=PROGRESS_CYCLE[(idx+1)%PROGRESS_CYCLE.length];
-      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview();
+      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview(); renderPathway();
     });
   });
   container.querySelectorAll('.transferbtn').forEach(btn=>{
@@ -1547,7 +1753,7 @@ function renderCoursesList(){
       const t=STATE.transferDecision[ord]||'undecided';
       const idx=TRANSFER_CYCLE.indexOf(t);
       STATE.transferDecision[ord]=TRANSFER_CYCLE[(idx+1)%TRANSFER_CYCLE.length];
-      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview();
+      queueSave(); renderCoursesList(); renderStats(); renderCourseOverview(); renderPathway();
     });
   });
 }
@@ -1686,6 +1892,8 @@ function renderPlanning(){
   });
   const targetEl = document.getElementById("in_targetMonths");
   if(targetEl && document.activeElement !== targetEl) targetEl.value = p.targetMonths;
+  const startDateEl = document.getElementById("in_startDate");
+  if(startDateEl && document.activeElement !== startDateEl) startDateEl.value = p.startDate || "";
   const schEl = document.getElementById("in_scholarship");
   if(schEl && document.activeElement !== schEl) schEl.checked = p.scholarship;
 
@@ -1753,6 +1961,7 @@ function renderPlanning(){
   }
 
   renderTermSchedule(p);
+  renderPaceComparison();
 }
 
 function renderTermSchedule(p){
@@ -1809,6 +2018,13 @@ function wirePlanningInputs(){
   if(targetMonths){
     targetMonths.addEventListener("input", (e)=>{
       STATE.planning = { ...STATE.planning, targetMonths: parseFloat(e.target.value) || 0 };
+      queueSave(); renderPlanning();
+    });
+  }
+  const startDate = document.getElementById("in_startDate");
+  if(startDate){
+    startDate.addEventListener("input", (e)=>{
+      STATE.planning = { ...STATE.planning, startDate: e.target.value };
       queueSave(); renderPlanning();
     });
   }
