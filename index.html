@@ -177,6 +177,12 @@
   button.transferbtn.not-transferable{border-style:solid; border-color:var(--slate); color:var(--slate); background:var(--slate-soft);}
   button.transferbtn:hover{filter:brightness(1.15);}
 
+  .reorder-wrap{display:flex; gap:4px;}
+  button.reorderbtn{font-family:'IBM Plex Sans',sans-serif; font-size:11px; padding:4px 9px; border-radius:8px; border:1px solid var(--line); cursor:pointer; background:var(--bg-soft); color:var(--text-soft);}
+  button.reorderbtn:hover:not(:disabled){filter:brightness(1.2); color:var(--text);}
+  button.reorderbtn:disabled{opacity:.35; cursor:not-allowed;}
+  .pathway-reality-note{font-size:12.5px; line-height:1.6; color:var(--text-soft); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:18px;}
+
   .menu-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
   .toolbar .menu-tabs{margin-bottom:0; align-items:center;}
 
@@ -248,10 +254,12 @@
     <div class="headerRight">
       <div class="syncbadge ok" id="syncBadge">Synced</div>
       <div class="lastsaved" id="lastSaved">Not saved yet</div>
+      <div class="lastsaved" id="syncModeLabel">GitHub sync: off (this browser only)</div>
       <div class="headerBtns">
         <button class="iconbtn" id="themeToggleBtn">Light mode</button>
         <button class="iconbtn" id="undoBtn" title="Undo (Ctrl+Z)" disabled>Undo</button>
         <button class="iconbtn" id="redoBtn" title="Redo (Ctrl+Y)" disabled>Redo</button>
+        <button class="iconbtn" id="syncSettingsBtn" title="Set up cross-device sync">Sync setup</button>
         <button class="iconbtn" id="exportBtn">Export</button>
         <button class="iconbtn" id="importBtn">Import</button>
       </div>
@@ -309,6 +317,16 @@
   </div>
 
   <div id="tab-pathway">
+    <div class="pathway-reality-note">
+      This numbering (1–40) is UoPeople's own published <i>example</i> sequence — it isn't a fixed
+      queue you're locked into. In practice, your first term is UNIV 1001 plus one more course that
+      the Office of Student Services assigns from whatever has no prerequisite yet (which may not be
+      #2 or #3 here); after that, you self-register each term, first-come first-served, for anything
+      whose prerequisite you've already passed. Use the &#9650;&#9660; buttons on each course to drag your
+      <i>actual</i> registration order into this list — your progress, transfer picks, and Sophia
+      mapping stay attached to the course either way.
+      <button class="iconbtn" id="resetOrderBtn" style="margin-left:8px;">Reset to example order</button>
+    </div>
     <div class="toolbar">
       <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="searchInput" placeholder="Search course name or code..."></div>
       <div class="filters" id="filterChips"></div>
@@ -397,8 +415,9 @@
       <h3>Term-by-term schedule preview</h3>
       <div class="slot-note" style="margin-bottom:14px;">
         Every course currently marked <b>Not transferable</b> or still <b>Undecided</b>, grouped into terms using
-        your "UoPeople courses / term" pace above, in pathway order (which already respects prerequisites).
-        This updates automatically as you change transfer decisions.
+        your "UoPeople courses / term" pace above, in your Pathway tab order (drag it to match how you actually
+        register — see the note at the top of the Pathway tab).
+        This updates automatically as you change transfer decisions or reorder the pathway.
       </div>
       <div id="termScheduleContent"></div>
     </div>
@@ -409,6 +428,48 @@
       <h3 id="modalTitle">Notice</h3>
       <p id="modalMessage"></p>
       <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <div id="syncModalOverlay" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width:480px;">
+      <h3>Cross-device sync</h3>
+      <p>
+        This site is static (GitHub Pages), so it has no server of its own to store your progress —
+        by default your data is saved only in this browser's local storage, which is why it doesn't
+        follow you when you switch browsers or devices. Connecting a private GitHub Gist gives it a
+        real place to sync through. Use the <b>same Token</b> and <b>same Gist ID</b> on every browser/device
+        you use this dashboard on.
+      </p>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--text-soft);">
+          GitHub Personal Access Token (fine-grained, "Gists: Read and write" only)
+        </label>
+        <input type="password" id="syncTokenInput" class="sophia-input" style="width:100%; padding:9px 12px;" placeholder="github_pat_...">
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--text-soft);">
+          Gist ID (leave blank the first time — one will be created for you)
+        </label>
+        <input type="text" id="syncGistIdInput" class="sophia-input" style="width:100%; padding:9px 12px;" placeholder="e.g. 8f1c2a9b3e...">
+      </div>
+      <p id="syncStatusText" style="font-size:12px; margin-bottom:14px;"></p>
+      <details style="margin-bottom:16px;">
+        <summary style="cursor:pointer; font-size:12px; color:var(--text-soft);">How do I get a token?</summary>
+        <p style="font-size:12px; margin-top:8px; margin-bottom:0;">
+          On GitHub: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens &rarr; Generate new token.
+          Under "Permissions" &rarr; "Account permissions", set <b>Gists</b> to <b>Read and write</b>. No repository access is needed.
+          Copy the token (starts with <code>github_pat_</code>) and paste it above. It's stored only in this browser's
+          local storage and sent directly from your browser to GitHub's API — never anywhere else.
+        </p>
+      </details>
+      <div class="modal-actions" style="justify-content:space-between;">
+        <button class="modal-btn danger" id="syncDisconnectBtn">Disconnect</button>
+        <div style="display:flex; gap:10px;">
+          <button class="modal-btn secondary" id="syncCancelBtn">Cancel</button>
+          <button class="modal-btn primary" id="syncConnectBtn">Save &amp; connect</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -581,6 +642,34 @@ const PATHWAY = [
 
 const CODE_TO_ORDER = {};
 PATHWAY.forEach(e=>{ if(e.type==="fixed") CODE_TO_ORDER[e.code] = e.o; });
+const ORDER_TO_ENTRY = {};
+PATHWAY.forEach(e=>{ ORDER_TO_ENTRY[e.o] = e; });
+
+// Real UoPeople registration doesn't hand out courses in one fixed queue: your first
+// term is UNIV 1001 plus one more course the Office of Student Services assigns
+// (from whatever has no prerequisite yet), and every term after that you self-register,
+// first-come-first-served, for anything whose prerequisite you've already passed —
+// not necessarily "the next number" in this list. So the array order above is only
+// UoPeople's own illustrative example; STATE.pathwayOrder is the sequence the user has
+// actually said they're following, and is what the UI displays and paces by.
+function getOrderedPathway(){
+  return STATE.pathwayOrder.map(o=>ORDER_TO_ENTRY[o]).filter(Boolean);
+}
+function movePathwayOrder(o, direction){
+  const arr = STATE.pathwayOrder;
+  const i = arr.indexOf(o);
+  const j = i + direction;
+  if(i<0 || j<0 || j>=arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  queueSave();
+  renderPathway();
+}
+function resetPathwayOrder(){
+  showConfirm("Reset to example order", "This puts the Pathway list back into UoPeople's example numbering (1–40). Your progress, transfer decisions, and Sophia mapping are untouched — only the display order changes.", ()=>{
+    STATE.pathwayOrder = PATHWAY.map(e=>e.o);
+    queueSave(); renderPathway();
+  });
+}
 
 function getDefaultState(){
   return {
@@ -645,6 +734,11 @@ function getDefaultState(){
     grade: {},
     weeklyTasks: {},
     theme: "dark",
+    // Default sequence = UoPeople's published "example" pathway numbering (1-40).
+    // In real registration this is a starting point, not a fixed queue — see the
+    // note above the Pathway list. Users can drag their own actual order in, and
+    // it's stored here as the list of catalog "o" numbers in display order.
+    pathwayOrder: PATHWAY.map(e=>e.o),
     planning: { sophiaPace: 2, uopPace: 2.5, termsPerYear: 5, targetMonths: 60, uopFee: 180, sophiaCost: 99, scholarship: true, startDate: "" }
   };
 }
@@ -688,6 +782,12 @@ function mergeStateWithDefaults(stateData, defaultsData){
   if(state.electiveMenus && typeof state.electiveMenus === "object"){
     defaults.electiveMenus = cloneState(state.electiveMenus);
   }
+  // pathwayOrder is a plain array of catalog numbers (the user's actual/preferred
+  // sequence), so it's carried through wholesale rather than deep-merged like the
+  // keyed objects above.
+  if(Array.isArray(state.pathwayOrder)){
+    defaults.pathwayOrder = cloneState(state.pathwayOrder);
+  }
   if(state.theme !== undefined) defaults.theme = state.theme;
   if(defaults.planning && typeof defaults.planning === "object"){
     defaults.planning = { ...getPlanningDefaults(), ...defaults.planning };
@@ -702,6 +802,82 @@ let saveTimer = null;
 let saveAttemptToken = 0;
 let remoteDefaults = null;
 
+// ---- Cross-device sync via a private GitHub Gist ----------------------------------
+// GitHub Pages is static hosting with no server of its own, so plain localStorage
+// never leaves the browser it was written in. A private Gist gives the page a real,
+// account-owned place to read/write JSON from, so progress follows you across
+// browsers and devices as long as the same token + Gist ID are used everywhere.
+const GIST_SYNC_KEY = "pathway-gist-sync-config-v1";
+const GIST_FILENAME = "pathway-tracker-state.json";
+
+function getSyncConfig(){
+  try{
+    const raw = localStorage.getItem(GIST_SYNC_KEY);
+    if(!raw) return null;
+    const cfg = JSON.parse(raw);
+    if(cfg && cfg.token && cfg.gistId) return cfg;
+    return null;
+  }catch(e){ return null; }
+}
+function setSyncConfig(cfg){
+  if(cfg) localStorage.setItem(GIST_SYNC_KEY, JSON.stringify(cfg));
+  else localStorage.removeItem(GIST_SYNC_KEY);
+}
+
+async function gistFetchContent(cfg){
+  const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    headers: { "Authorization": `token ${cfg.token}`, "Accept": "application/vnd.github+json" }
+  });
+  if(!res.ok) throw new Error("Gist read failed (HTTP " + res.status + ")");
+  const data = await res.json();
+  const file = data.files && data.files[GIST_FILENAME];
+  if(!file) throw new Error("This gist has no " + GIST_FILENAME + " file yet");
+  if(file.truncated && file.raw_url){
+    const rawRes = await fetch(file.raw_url);
+    return await rawRes.text();
+  }
+  return file.content;
+}
+
+async function gistCreate(cfg, payload){
+  const res = await fetch("https://api.github.com/gists", {
+    method: "POST",
+    headers: {
+      "Authorization": `token ${cfg.token}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      description: "UoPeople Learning Pathway — dashboard sync data (private)",
+      public: false,
+      files: { [GIST_FILENAME]: { content: payload } }
+    })
+  });
+  if(!res.ok) throw new Error("Gist create failed (HTTP " + res.status + ")");
+  const data = await res.json();
+  return data.id;
+}
+
+async function gistUpdate(cfg, payload){
+  const res = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": `token ${cfg.token}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content: payload } } })
+  });
+  if(!res.ok) throw new Error("Gist update failed (HTTP " + res.status + ")");
+}
+
+function updateSyncModeLabel(){
+  const el = document.getElementById("syncModeLabel");
+  if(!el) return;
+  const cfg = getSyncConfig();
+  el.textContent = cfg ? "GitHub sync: on" : "GitHub sync: off (this browser only)";
+}
+
 function ensureStateShape(){
   STATE.progress = STATE.progress || {};
   STATE.transferDecision = STATE.transferDecision || {};
@@ -715,6 +891,16 @@ function ensureStateShape(){
   STATE.theme = STATE.theme || "dark";
   STATE.planning = { ...getPlanningDefaults(), ...(STATE.planning || {}) };
   STATE.electiveMenus = STATE.electiveMenus || getDefaultElectiveMenus();
+
+  // pathwayOrder: the user's actual/preferred display sequence. Repair rather than
+  // reset outright, so a stray save doesn't wipe someone's custom ordering — drop
+  // any "o" numbers that no longer exist in PATHWAY, then append any that are
+  // missing (e.g. after this file adds a course) at the end in their natural order.
+  const validOrders = new Set(PATHWAY.map(e=>e.o));
+  if(!Array.isArray(STATE.pathwayOrder)) STATE.pathwayOrder = [];
+  STATE.pathwayOrder = STATE.pathwayOrder.filter(o=>validOrders.has(o));
+  const present = new Set(STATE.pathwayOrder);
+  PATHWAY.forEach(e=>{ if(!present.has(e.o)) STATE.pathwayOrder.push(e.o); });
 
   const defaults = getDefaultState();
   Object.keys(defaults.transferDecision).forEach(o=>{
@@ -743,7 +929,12 @@ function escapeHtml(str){
   return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+let GIST_SYNC_ACTIVE = false;
+let GIST_SYNC_LAST_ERROR = null;
+
 async function loadState(){
+  // 1) Local cache first (window.storage in the Claude artifact preview, else
+  //    this browser's localStorage) so there's always something to show immediately.
   try{
     if(window.storage && window.storage.get){
       const res = await window.storage.get(STORAGE_KEY, false);
@@ -777,6 +968,28 @@ async function loadState(){
     }
   }catch(e){
   }
+
+  // 2) If cross-device sync is set up, the Gist is the source of truth — it's the
+  //    one place every browser/device reads from and writes to, so it wins over
+  //    whatever this particular browser had cached locally.
+  const cfg = getSyncConfig();
+  if(cfg){
+    try{
+      const remoteText = await gistFetchContent(cfg);
+      if(remoteText){
+        const parsed = JSON.parse(remoteText);
+        const persistedState = parsed.state || parsed;
+        STATE = mergeStateWithDefaults(persistedState, parsed.defaults || remoteDefaults || getDefaultState());
+      }
+      GIST_SYNC_ACTIVE = true;
+      GIST_SYNC_LAST_ERROR = null;
+    }catch(e){
+      console.warn("Gist sync read failed, using local cache instead:", e);
+      GIST_SYNC_ACTIVE = false;
+      GIST_SYNC_LAST_ERROR = e.message || String(e);
+    }
+  }
+
   ensureStateShape();
 }
 
@@ -813,10 +1026,22 @@ async function attemptSave(retriesLeft){
     // GitHub Pages is static hosting with no write endpoint, so we never attempt to write
     // back to it — that request could never succeed and previously just failed silently
     // on every single save.
+
+    // If cross-device sync is configured, push the same payload up to the Gist so
+    // other browsers/devices see it. This is what actually makes progress follow
+    // you around — the local save above only ever covers this one browser.
+    const cfg = getSyncConfig();
+    if(cfg){
+      await gistUpdate(cfg, payload);
+      GIST_SYNC_ACTIVE = true;
+      GIST_SYNC_LAST_ERROR = null;
+    }
+
     if(myToken !== saveAttemptToken) return;
     setSyncBadge("ok");
   }catch(e){
-    console.warn("Storage save failed:", e);
+    console.warn("Save failed:", e);
+    GIST_SYNC_LAST_ERROR = e.message || String(e);
     if(myToken !== saveAttemptToken) return;
     if(retriesLeft > 0){
       setTimeout(()=>attemptSave(retriesLeft-1), 1500 + Math.random()*1000);
@@ -863,7 +1088,7 @@ let hideDone = false;
 let proctoredOnly = false;
 
 function getNextUpOrder(){
-  for(const entry of PATHWAY){
+  for(const entry of getOrderedPathway()){
     const p = STATE.progress[entry.o] || "to-learn";
     if(p !== "done") return entry.o;
   }
@@ -1163,8 +1388,10 @@ function renderPathway(){
   let anyVisible = false;
   const nextUpOrder = getNextUpOrder();
   const dupeOrders = getDuplicateChoiceOrders();
+  const orderedPathway = getOrderedPathway();
+  const filtersActive = activeFilter!=="all" || activeTransferFilter!=="all" || hideDone || proctoredOnly || searchTerm.trim()!=="";
 
-  PATHWAY.forEach(entry=>{
+  orderedPathway.forEach((entry, idx)=>{
     const c = resolveCourse(entry);
     const progress = STATE.progress[entry.o] || "to-learn";
     const transferDecision = STATE.transferDecision[entry.o] || "undecided";
@@ -1182,7 +1409,8 @@ function renderPathway(){
 
     const dot = document.createElement("div");
     dot.className = "dot";
-    dot.textContent = entry.o;
+    dot.title = "Catalog reference #" + entry.o;
+    dot.textContent = idx+1;
     node.appendChild(dot);
 
     const card = document.createElement("div");
@@ -1196,6 +1424,12 @@ function renderPathway(){
       tag.className = "nextup-tag";
       tag.textContent = "NEXT UP";
       left.appendChild(tag);
+    }
+    if(entry.o !== idx+1){
+      const catTag = document.createElement("div");
+      catTag.style = "font-size:10.5px; color:var(--text-soft); margin-bottom:4px;";
+      catTag.textContent = "Catalog example order: #" + entry.o;
+      left.appendChild(catTag);
     }
     if(entry.proctored){
       const ptag = document.createElement("div");
@@ -1398,6 +1632,23 @@ function renderPathway(){
       queueSave(); renderPathway(); renderStats();
     };
     controls.appendChild(transferBtn);
+
+    const reorderWrap = document.createElement("div");
+    reorderWrap.className = "reorder-wrap";
+    reorderWrap.title = filtersActive ? "Clear search/filters to reorder" : "Move to match the order you actually registered in";
+    const upBtn = document.createElement("button");
+    upBtn.className = "reorderbtn";
+    upBtn.textContent = "▲";
+    upBtn.disabled = filtersActive || idx===0;
+    upBtn.onclick = ()=>movePathwayOrder(entry.o, -1);
+    const downBtn = document.createElement("button");
+    downBtn.className = "reorderbtn";
+    downBtn.textContent = "▼";
+    downBtn.disabled = filtersActive || idx===orderedPathway.length-1;
+    downBtn.onclick = ()=>movePathwayOrder(entry.o, 1);
+    reorderWrap.appendChild(upBtn);
+    reorderWrap.appendChild(downBtn);
+    controls.appendChild(reorderWrap);
 
     card.appendChild(controls);
     node.appendChild(card);
@@ -1970,7 +2221,9 @@ function renderTermSchedule(p){
 
   // Courses you'll actually register for at UoPeople: not-transferable, or still undecided
   // (since undecided courses default to "take it directly" until you say otherwise).
-  const directCourses = PATHWAY.filter(entry=>{
+  // Uses the user's actual/customized order (STATE.pathwayOrder), not the raw catalog
+  // numbering, since that's the order they'll really be registering in.
+  const directCourses = getOrderedPathway().filter(entry=>{
     const t = STATE.transferDecision[entry.o] || "undecided";
     return t === "not-transferable" || t === "undecided";
   });
@@ -2075,6 +2328,7 @@ document.querySelectorAll(".tab").forEach(tab=>{
 });
 
 document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTerm = e.target.value; renderPathway(); });
+document.getElementById("resetOrderBtn").addEventListener("click", resetPathwayOrder);
 document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
 document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
 document.getElementById("proctoredOnlyToggle").addEventListener("change", (e)=>{ proctoredOnly = e.target.checked; renderPathway(); });
@@ -2155,11 +2409,95 @@ function renderAll(){
   renderCoursesList();
 }
 
+// ---- Sync settings modal wiring ----------------------------------------------------
+function openSyncModal(){
+  const cfg = getSyncConfig();
+  document.getElementById("syncTokenInput").value = cfg ? cfg.token : "";
+  document.getElementById("syncGistIdInput").value = cfg ? cfg.gistId : "";
+  const statusEl = document.getElementById("syncStatusText");
+  if(cfg && GIST_SYNC_ACTIVE){
+    statusEl.style.color = "var(--teal)";
+    statusEl.textContent = "Connected — gist " + cfg.gistId + " is syncing.";
+  } else if(cfg && GIST_SYNC_LAST_ERROR){
+    statusEl.style.color = "var(--danger)";
+    statusEl.textContent = "Saved credentials, but the last sync failed: " + GIST_SYNC_LAST_ERROR;
+  } else {
+    statusEl.style.color = "var(--text-soft)";
+    statusEl.textContent = "Not connected — progress is only saved in this browser.";
+  }
+  document.getElementById("syncModalOverlay").style.display = "flex";
+}
+function closeSyncModal(){
+  document.getElementById("syncModalOverlay").style.display = "none";
+}
+document.getElementById("syncSettingsBtn").addEventListener("click", openSyncModal);
+document.getElementById("syncCancelBtn").addEventListener("click", closeSyncModal);
+
+document.getElementById("syncDisconnectBtn").addEventListener("click", ()=>{
+  setSyncConfig(null);
+  GIST_SYNC_ACTIVE = false;
+  GIST_SYNC_LAST_ERROR = null;
+  updateSyncModeLabel();
+  closeSyncModal();
+  showAlert("Disconnected", "GitHub sync is off. This browser will keep saving locally only.");
+});
+
+document.getElementById("syncConnectBtn").addEventListener("click", async ()=>{
+  const token = document.getElementById("syncTokenInput").value.trim();
+  let gistId = document.getElementById("syncGistIdInput").value.trim();
+  const statusEl = document.getElementById("syncStatusText");
+  if(!token){
+    statusEl.style.color = "var(--danger)";
+    statusEl.textContent = "Paste a GitHub token first.";
+    return;
+  }
+  statusEl.style.color = "var(--text-soft)";
+  statusEl.textContent = "Connecting...";
+  const cfg = { token, gistId };
+  try{
+    if(!gistId){
+      // First time: create a fresh private gist seeded with what's currently on screen.
+      const payload = JSON.stringify({ defaults: remoteDefaults || getDefaultState(), state: STATE });
+      gistId = await gistCreate(cfg, payload);
+      cfg.gistId = gistId;
+      document.getElementById("syncGistIdInput").value = gistId;
+      setSyncConfig(cfg);
+      GIST_SYNC_ACTIVE = true;
+      GIST_SYNC_LAST_ERROR = null;
+      statusEl.style.color = "var(--teal)";
+      statusEl.textContent = "Connected — created gist " + gistId + ". Enter this same token and Gist ID on your other browsers/devices to sync them too.";
+    } else {
+      // Reconnecting to an existing gist: pull its data in as the current state.
+      const remoteText = await gistFetchContent(cfg);
+      const parsed = JSON.parse(remoteText);
+      const persistedState = parsed.state || parsed;
+      STATE = mergeStateWithDefaults(persistedState, parsed.defaults || remoteDefaults || getDefaultState());
+      ensureStateShape();
+      normalizeChoiceSelections();
+      setSyncConfig(cfg);
+      GIST_SYNC_ACTIVE = true;
+      GIST_SYNC_LAST_ERROR = null;
+      applyTheme();
+      renderAll();
+      statusEl.style.color = "var(--teal)";
+      statusEl.textContent = "Connected — pulled in progress from gist " + gistId + ".";
+    }
+    updateSyncModeLabel();
+  }catch(e){
+    console.warn("Sync connect failed:", e);
+    GIST_SYNC_ACTIVE = false;
+    GIST_SYNC_LAST_ERROR = e.message || String(e);
+    statusEl.style.color = "var(--danger)";
+    statusEl.textContent = "Couldn't connect: " + GIST_SYNC_LAST_ERROR + ". Check the token has \"Gists: Read and write\" access and the Gist ID is correct.";
+  }
+});
+
 (async function init(){
   await loadState();
   applyTheme();
   wirePlanningInputs();
   renderAll();
+  updateSyncModeLabel();
   // initialize history with current state
   LAST_SNAPSHOT = JSON.stringify(STATE);
   HISTORY = [ cloneState(STATE) ];
