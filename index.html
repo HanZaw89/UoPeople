@@ -328,6 +328,13 @@
       <button class="iconbtn" id="resetOrderBtn" style="margin-left:8px;">Reset to example order</button>
     </div>
     <div class="toolbar">
+      <div class="filters" id="majorMinorFilterChips"></div>
+      <div style="display:flex; gap:8px; margin-left:auto;">
+        <button class="iconbtn" id="bulkMinorTransferableBtn" title="Set every Gen Ed / General Elective course to Transferable">Mark all Minor &rarr; Transferable</button>
+        <button class="iconbtn" id="bulkMajorNotTransferableBtn" title="Set every Major Required / Major Elective (CS) course to Not transferable">Mark all Major &rarr; Not transferable</button>
+      </div>
+    </div>
+    <div class="toolbar">
       <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="searchInput" placeholder="Search course name or code..."></div>
       <div class="filters" id="filterChips"></div>
     </div>
@@ -1083,9 +1090,40 @@ const WEEKLY_TASK_ITEMS = [
 
 let activeFilter = "all";
 let activeTransferFilter = "all";
+let activeMajorMinorFilter = "all";
 let searchTerm = "";
 let hideDone = false;
 let proctoredOnly = false;
+
+// "Major" = the Computer Science courses that make up your CS major (Major Required +
+// Major Elective categories) — these are the courses you're taking directly at UoPeople.
+// "Minor" here just means "everything else on the pathway" (Gen Ed + General Elective) —
+// UoPeople bachelor's degrees don't have a formal minor, but these are exactly the
+// courses that are open to transfer in via Sophia Learning instead of major-specific ones.
+function isMajorCategory(cat){
+  return cat === "Major Required" || cat === "Major Elective";
+}
+function majorMinorOf(cat){
+  return isMajorCategory(cat) ? "major" : "minor";
+}
+function bulkSetTransferByBucket(bucket, decision){
+  const affected = PATHWAY.filter(entry=>{
+    const c = resolveCourse(entry);
+    return majorMinorOf(c.cat) === bucket;
+  });
+  const already = affected.filter(e=>(STATE.transferDecision[e.o]||"undecided")===decision).length;
+  const toChange = affected.length - already;
+  const bucketLabel = bucket==="major" ? "Major (CS)" : "Minor (Gen Ed / General Elective)";
+  showConfirm(
+    `Set all ${bucketLabel} courses to "${TRANSFER_LABEL[decision]}"?`,
+    `This updates ${affected.length} course${affected.length===1?"":"s"} total (${toChange} will actually change status). Progress, grades, and Sophia mapping are untouched — only the transfer-decision tag changes. You can still edit any course individually afterward.`,
+    ()=>{
+      affected.forEach(e=>{ STATE.transferDecision[e.o] = decision; });
+      queueSave();
+      renderAll();
+    }
+  );
+}
 
 function getNextUpOrder(){
   for(const entry of getOrderedPathway()){
@@ -1340,6 +1378,21 @@ function renderStats(){
 }
 
 function renderFilters(){
+  const mmCats = [
+    {key:"all", label:"All (major + minor)"},
+    {key:"major", label:"Major (CS courses)"},
+    {key:"minor", label:"Minor (Gen Ed / General Elective)"},
+  ];
+  const mmEl = document.getElementById("majorMinorFilterChips");
+  mmEl.innerHTML = "";
+  mmCats.forEach(({key,label})=>{
+    const chip = document.createElement("div");
+    chip.className = "chip" + (activeMajorMinorFilter===key ? " active":"");
+    chip.textContent = label;
+    chip.onclick = ()=>{ activeMajorMinorFilter = key; renderPathway(); renderFilters(); };
+    mmEl.appendChild(chip);
+  });
+
   const cats = ["all","Major Required","Major Elective","General Elective","Gen Ed"];
   const chipsEl = document.getElementById("filterChips");
   chipsEl.innerHTML = "";
@@ -1389,7 +1442,7 @@ function renderPathway(){
   const nextUpOrder = getNextUpOrder();
   const dupeOrders = getDuplicateChoiceOrders();
   const orderedPathway = getOrderedPathway();
-  const filtersActive = activeFilter!=="all" || activeTransferFilter!=="all" || hideDone || proctoredOnly || searchTerm.trim()!=="";
+  const filtersActive = activeFilter!=="all" || activeMajorMinorFilter!=="all" || activeTransferFilter!=="all" || hideDone || proctoredOnly || searchTerm.trim()!=="";
 
   orderedPathway.forEach((entry, idx)=>{
     const c = resolveCourse(entry);
@@ -1397,6 +1450,7 @@ function renderPathway(){
     const transferDecision = STATE.transferDecision[entry.o] || "undecided";
 
     if(activeFilter!=="all" && c.cat!==activeFilter) return;
+    if(activeMajorMinorFilter!=="all" && majorMinorOf(c.cat)!==activeMajorMinorFilter) return;
     if(activeTransferFilter!=="all" && transferDecision!==activeTransferFilter) return;
     if(hideDone && progress==="done") return;
     if(proctoredOnly && !entry.proctored) return;
@@ -2329,6 +2383,8 @@ document.querySelectorAll(".tab").forEach(tab=>{
 
 document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTerm = e.target.value; renderPathway(); });
 document.getElementById("resetOrderBtn").addEventListener("click", resetPathwayOrder);
+document.getElementById("bulkMinorTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("minor","transferable"));
+document.getElementById("bulkMajorNotTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("major","not-transferable"));
 document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
 document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
 document.getElementById("proctoredOnlyToggle").addEventListener("change", (e)=>{ proctoredOnly = e.target.checked; renderPathway(); });
