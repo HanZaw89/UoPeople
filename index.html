@@ -182,6 +182,15 @@
   button.reorderbtn:hover:not(:disabled){filter:brightness(1.2); color:var(--text);}
   button.reorderbtn:disabled{opacity:.35; cursor:not-allowed;}
   .pathway-reality-note{font-size:12.5px; line-height:1.6; color:var(--text-soft); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:18px;}
+  .sophia-tier-badge{font-size:10px; font-weight:700; letter-spacing:.02em; padding:3px 8px; border-radius:20px; white-space:nowrap; cursor:help;}
+  .sophia-tier-badge.quiz-only{color:var(--teal); background:var(--teal-soft);}
+  .sophia-tier-badge.quick-touchstone{color:var(--amber); background:var(--amber-soft);}
+  .sophia-tier-badge.has-touchstone{color:var(--danger, #c0392b); background:rgba(192,57,43,0.12);}
+  .sophia-tier-badge.uncertain{color:#8a6a1f; background:var(--gold-soft, rgba(138,106,31,0.12));}
+  .sophia-tier-badge.unverified{color:var(--text-soft); background:var(--bg-soft); border:1px dashed var(--line);}
+  .sophia-tier-badge.none{color:var(--text-soft); background:var(--bg-soft);}
+  .suggested-transfer-row{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .suggested-transfer-row:last-child{border-bottom:none;}
 
   .menu-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px;}
   .toolbar .menu-tabs{margin-bottom:0; align-items:center;}
@@ -326,6 +335,24 @@
       <i>actual</i> registration order into this list — your progress, transfer picks, and Sophia
       mapping stay attached to the course either way.
       <button class="iconbtn" id="resetOrderBtn" style="margin-left:8px;">Reset to example order</button>
+    </div>
+    <div class="panel" style="margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="suggestedTransferToggle">
+        <h3 style="margin:0;">Suggested Sophia transfer order</h3>
+        <button class="iconbtn" id="suggestedTransferToggleBtn">Show</button>
+      </div>
+      <div id="suggestedTransferBody" style="display:none; margin-top:12px;">
+        <div class="slot-note" style="margin-bottom:14px;">
+          Every Gen Ed / General Elective ("Minor") course you haven't finished yet, ranked with the
+          <b>confirmed</b> quiz-only courses first. A correction: earlier research on this assumed most Gen Ed
+          courses were quiz-only — checking sophia.org's own current pages directly showed that's wrong for
+          several (Psychology, Sociology, Ancient Greek Philosophers, and Environmental Science all now carry
+          a graded Touchstone). Only courses actually checked against a live sophia.org syllabus are marked
+          confirmed either way; the rest show "Not yet verified" — check the syllabus on Sophia before assuming
+          it's fast, since Sophia has been adding Touchstones to courses that used to be quiz-only.
+        </div>
+        <div id="suggestedTransferList"></div>
+      </div>
     </div>
     <div class="toolbar">
       <div class="filters" id="majorMinorFilterChips"></div>
@@ -573,6 +600,70 @@ const ELECTIVE_MENUS = {
   generalelective: { label: "General Elective Choices", note: "Qualified General Electives include any General Education course plus any course/elective from Business Administration, Health Science, or Computer Science.",
     options: []}
 };
+
+// ---- Sophia Learning assessment speed (research-backed, verified against sophia.org) --
+// IMPORTANT CORRECTION: an earlier version of this file assumed most Gen Ed courses were
+// "quiz-only" based on an older (2024) community wiki list. Checking sophia.org's own
+// current course pages directly shows that's now wrong for several courses — Sophia has
+// been actively ADDING Touchstones (human-graded written/project work) to courses that
+// used to be quiz-only. Introduction to Psychology, Introduction to Sociology, Ancient
+// Greek Philosophers, and Environmental Science all now carry Touchstones per Sophia's
+// own live course pages, even though older sources (and this file's first draft) called
+// them quiz-only. Sophia's syllabi are evidently a moving target, so treat every tier
+// below as "best evidence as of Sept 2026," not a permanent guarantee — the one sure way
+// to know is the syllabus/course dashboard for your own active course.
+//
+// Sources checked directly on sophia.org / app.sophia.org course pages (Sept 2026):
+//  - Introduction to Psychology: 13 Challenges, 4 Milestones, 3 Touchstones
+//  - Introduction to Sociology: 12 Challenges, 4 Milestones, 2 Touchstones
+//  - Ancient Greek Philosophers: 4 Challenges, 1 Milestone, 2 Touchstones
+//  - Environmental Science: 13 Challenges, 4 Knowledge Checks, 5 Milestones, 1 Touchstone
+//  - Business Law: 11 Challenges, 4 Milestones, 1 Touchstone (Sophia's own wiki/forum
+//    references call this one of the "short and easy" Touchstones, ~1-2 day grading)
+//  - English Composition I: has Touchstone(s) — the classic essay-heavy one, confirmed
+//    everywhere including Sophia's own FAQ
+//  - Human Biology: 21 Challenges, 7 Milestones — NO Touchstone mentioned
+//  - Introduction to Statistics: 20 Challenges, 6 Milestones — NO Touchstone mentioned
+//  - Introduction to Ethics and Art History I: Sophia's own pages currently DISAGREE with
+//    each other — one version of each course's page lists a Touchstone, another (and an
+//    older syllabus) doesn't. Likely mid-transition; flagged as uncertain rather than
+//    guessed either way.
+// Everything else in this dashboard's Sophia mappings has NOT been individually checked
+// against a current syllabus — those show as "Not yet verified" rather than assumed fast.
+const SOPHIA_HAS_TOUCHSTONE = {
+  "Introduction to Psychology": "Confirmed: 3 Touchstones (sophia.org, Sept 2026).",
+  "Introduction to Sociology": "Confirmed: 2 Touchstones (sophia.org, Sept 2026).",
+  "Ancient Greek Philosophers": "Confirmed: 2 Touchstones (sophia.org, Sept 2026).",
+  "Environmental Science": "Confirmed: 1 Touchstone (sophia.org, Sept 2026).",
+  "English Composition I": "Confirmed: has essay Touchstone(s) — Sophia's own slowest, heaviest-graded course.",
+  "English Composition II": "Confirmed: has essay Touchstone(s), same as English Composition I.",
+  "Public Speaking": "Confirmed: has a recorded/presentation Touchstone.",
+};
+const SOPHIA_QUICK_TOUCHSTONE = new Set(["Business Law"]);
+const SOPHIA_CONFIRMED_QUIZ_ONLY = new Set(["Human Biology", "Introduction to Statistics"]);
+const SOPHIA_UNCERTAIN = {
+  "Introduction to Ethics": "Sophia's own course pages currently disagree: one lists 13 Challenges/5 Milestones/3 Touchstones, another (and an older syllabus) lists 11 Challenges/5 Milestones with none. Check your own course dashboard before assuming either way.",
+  "Art History I": "Sophia's own course pages currently disagree: one lists 15 Challenges/3 Milestones with no Touchstone, an older syllabus lists 16 Challenges/5 Milestones/1 Touchstone. Check your own course dashboard before assuming either way.",
+};
+function getSophiaTier(sophiaName){
+  const name = (sophiaName||"").trim();
+  if(!name || /^take at uopeople/i.test(name)){
+    return { tier:"none", label:"No Sophia option", note:"This course has no Sophia equivalent — it has to be taken directly at UoPeople." };
+  }
+  if(name === "Business Law"){
+    return { tier:"quick-touchstone", label:"Quick Touchstone", note:"Confirmed 1 Touchstone (sophia.org, Sept 2026), but it's the short kind — community reports ~1\u20132 business day grading turnaround." };
+  }
+  if(SOPHIA_HAS_TOUCHSTONE[name]){
+    return { tier:"has-touchstone", label:"Has a Touchstone \u2014 slower", note: SOPHIA_HAS_TOUCHSTONE[name] + " Written/project work graded by a human, so expect a slower turnaround than a quiz-only course." };
+  }
+  if(SOPHIA_UNCERTAIN[name]){
+    return { tier:"uncertain", label:"Uncertain \u2014 verify first", note: SOPHIA_UNCERTAIN[name] };
+  }
+  if(SOPHIA_CONFIRMED_QUIZ_ONLY.has(name)){
+    return { tier:"quiz-only", label:"Quiz-only \u2014 confirmed fast", note:"Checked directly on sophia.org (Sept 2026): Challenges/Milestones only, no Touchstone listed." };
+  }
+  return { tier:"unverified", label:"Not yet verified", note:"Not individually checked against a current Sophia syllabus \u2014 Sophia has been adding Touchstones to courses that used to be quiz-only, so don't assume this one is fast. Check the syllabus on sophia.org before relying on it." };
+}
 
 const QUALIFIED_GENERAL_ELECTIVE_OPTIONS = [];
 const QUALIFIED_GENERAL_ELECTIVE_SEEN = new Set();
@@ -1435,7 +1526,48 @@ function normalizeChoiceSelections(){
   });
 }
 
+const SOPHIA_TIER_ORDER = { "quiz-only": 0, "quick-touchstone": 1, "unverified": 2, "uncertain": 3, "has-touchstone": 4, "none": 5 };
+function renderSuggestedTransferList(){
+  const listEl = document.getElementById("suggestedTransferList");
+  if(!listEl) return;
+  const candidates = PATHWAY.map(entry=>{
+    const c = resolveCourse(entry);
+    return { entry, c };
+  }).filter(({entry, c})=>{
+    if(majorMinorOf(c.cat) !== "minor") return false;
+    const progress = STATE.progress[entry.o] || "to-learn";
+    if(progress === "done") return false;
+    const transferDecision = STATE.transferDecision[entry.o] || "undecided";
+    if(transferDecision === "not-transferable") return false;
+    const sophiaVal = (STATE.sophiaOverride[entry.o] !== undefined) ? STATE.sophiaOverride[entry.o] : (c.sophia || "");
+    return getSophiaTier(sophiaVal).tier !== "none";
+  }).map(({entry, c})=>{
+    const sophiaVal = (STATE.sophiaOverride[entry.o] !== undefined) ? STATE.sophiaOverride[entry.o] : (c.sophia || "");
+    return { entry, c, sophiaVal, tier: getSophiaTier(sophiaVal) };
+  });
+  candidates.sort((a,b)=> SOPHIA_TIER_ORDER[a.tier.tier] - SOPHIA_TIER_ORDER[b.tier.tier]);
+
+  if(candidates.length === 0){
+    listEl.innerHTML = `<div class="slot-note">No pending minor courses with a Sophia option right now — either you're done, or they're all set to Not transferable.</div>`;
+    return;
+  }
+  listEl.innerHTML = "";
+  candidates.forEach(({entry, c, sophiaVal, tier})=>{
+    const row = document.createElement("div");
+    row.className = "suggested-transfer-row";
+    row.innerHTML = `
+      <div>
+        <div style="font-weight:600;">${escapeHtml(c.name)} <span style="font-weight:400; color:var(--text-soft); font-size:12px;">${escapeHtml(c.code||"")}</span></div>
+        <div style="font-size:12px; color:var(--text-soft);">Sophia: ${escapeHtml(sophiaVal||"(none set)")}</div>
+      </div>
+      <span class="sophia-tier-badge ${tier.tier}" title="${escapeHtml(tier.note)}">${escapeHtml(tier.label)}</span>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
 function renderPathway(){
+  renderSuggestedTransferList();
   const rail = document.getElementById("pathwayRail");
   rail.innerHTML = "";
   let anyVisible = false;
@@ -1572,8 +1704,18 @@ function renderPathway(){
     sophiaInput.className = "sophia-input";
     sophiaInput.placeholder = "Enter Sophia equivalent course...";
     sophiaInput.value = currentSophiaVal;
-    sophiaInput.oninput = (e)=>{ STATE.sophiaOverride[entry.o] = e.target.value; queueSave(); };
+    const sophiaTierBadge = document.createElement("span");
+    sophiaTierBadge.className = "sophia-tier-badge";
+    function refreshSophiaTierBadge(){
+      const info = getSophiaTier(sophiaInput.value);
+      sophiaTierBadge.className = "sophia-tier-badge " + info.tier;
+      sophiaTierBadge.textContent = info.label;
+      sophiaTierBadge.title = info.note;
+    }
+    refreshSophiaTierBadge();
+    sophiaInput.oninput = (e)=>{ STATE.sophiaOverride[entry.o] = e.target.value; queueSave(); refreshSophiaTierBadge(); };
     sophiaRow.appendChild(sophiaInput);
+    sophiaRow.appendChild(sophiaTierBadge);
     left.appendChild(sophiaRow);
 
     /* Sophia completion sub-tracker — only meaningful for courses you're actually routing through Sophia */
@@ -2385,6 +2527,15 @@ document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTe
 document.getElementById("resetOrderBtn").addEventListener("click", resetPathwayOrder);
 document.getElementById("bulkMinorTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("minor","transferable"));
 document.getElementById("bulkMajorNotTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("major","not-transferable"));
+function toggleSuggestedTransferPanel(){
+  const body = document.getElementById("suggestedTransferBody");
+  const btn = document.getElementById("suggestedTransferToggleBtn");
+  const showing = body.style.display !== "none";
+  body.style.display = showing ? "none" : "block";
+  btn.textContent = showing ? "Show" : "Hide";
+}
+document.getElementById("suggestedTransferToggle").addEventListener("click", toggleSuggestedTransferPanel);
+document.getElementById("suggestedTransferToggleBtn").addEventListener("click", (e)=>{ e.stopPropagation(); toggleSuggestedTransferPanel(); });
 document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
 document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
 document.getElementById("proctoredOnlyToggle").addEventListener("change", (e)=>{ proctoredOnly = e.target.checked; renderPathway(); });
