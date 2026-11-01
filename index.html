@@ -114,6 +114,11 @@
   .chip.active{background:var(--gold); color:#1B1F2B; border-color:var(--gold);}
   .togglewrap{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-soft); cursor:pointer; user-select:none;}
   .togglewrap input{accent-color:var(--gold);}
+  .filter-control{display:flex; align-items:center; gap:7px; color:var(--text-soft); font-size:12px;}
+  select.filter-select{width:auto; min-width:150px; margin:0; padding:7px 30px 7px 10px; font-size:12.5px;}
+  .bulk-actions{margin-left:auto; position:relative;}
+  .bulk-actions summary{cursor:pointer; color:var(--text-soft); font-size:12px; user-select:none;}
+  .bulk-actions .bulk-menu{position:absolute; z-index:10; right:0; top:24px; min-width:230px; padding:10px; background:var(--card); border:1px solid var(--line); border-radius:8px; box-shadow:0 10px 24px rgba(0,0,0,.2); display:grid; gap:7px;}
 
   .rail{position:relative; padding-left:36px;}
   .rail::before{content:""; position:absolute; left:12px; top:6px; bottom:6px; width:2px; background:repeating-linear-gradient(to bottom, var(--line) 0 6px, transparent 6px 11px);}
@@ -140,22 +145,6 @@
   input.table-sophia-input{width:100%; min-width:150px; padding:5px 8px; font-size:12px; font-family:'IBM Plex Sans',sans-serif; border-radius:6px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text);}
   .nextup-tag{font-size:10.5px; font-weight:700; letter-spacing:.06em; color:#1B1F2B; background:var(--gold); padding:3px 9px; border-radius:12px; margin-bottom:6px; display:inline-block;}
   .proctored-tag{font-size:10.5px; font-weight:700; letter-spacing:.04em; color:var(--danger); background:var(--danger-soft); padding:3px 9px; border-radius:12px; margin-bottom:6px; display:inline-block;}
-  .sophiaprogressbtn{
-    font-family:'IBM Plex Sans',sans-serif; font-size:11.5px; font-weight:600; padding:5px 11px;
-    border-radius:16px; border:1px solid var(--line); cursor:pointer; background:var(--bg-soft); color:var(--text-soft); display:block;
-  }
-  .sophiaprogressbtn.studying{border-color:var(--amber); color:var(--amber);}
-  .sophiaprogressbtn.completed, .sophiaprogressbtn.submitted{border-color:var(--gold); color:var(--gold);}
-  .sophiaprogressbtn.approved{border-color:var(--teal); color:var(--teal); background:var(--teal-soft);}
-  .grade-row{display:flex; align-items:center; gap:10px; margin-top:8px;}
-  .grade-select{
-    font-family:'IBM Plex Mono',monospace; font-size:12.5px; padding:5px 8px; border-radius:8px;
-    border:1px solid var(--line); background:var(--bg-soft); color:var(--text);
-  }
-  .weekly-checklist{margin-top:10px; padding:10px 12px; background:var(--bg-soft); border:1px solid var(--line); border-radius:9px;}
-  .weekly-checklist .wc-title{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--amber); font-weight:700; margin-bottom:6px;}
-  .weekly-checklist .wc-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-soft); padding:3px 0; cursor:pointer;}
-  .weekly-checklist .wc-row input{accent-color:var(--gold); width:14px; height:14px;}
   .warn-tag{font-size:11.5px; color:var(--danger); background:var(--danger-soft); padding:4px 10px; border-radius:8px; margin-top:8px; display:inline-block;}
   textarea.notes{
     width:100%; margin-top:8px; font-family:'IBM Plex Sans',sans-serif; font-size:12.5px; padding:8px 10px;
@@ -164,6 +153,7 @@
 
   select.picker, input.freetext{font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; padding:7px 10px; border-radius:8px; border:1px solid var(--line); background:var(--bg-soft); color:var(--text); width:100%; margin-top:4px;}
   select.picker option{background:var(--card); color:var(--text);}
+  .toolbar select.picker.filter-select{width:auto; min-width:150px; margin:0;}
 
   .controls{display:flex; flex-direction:column; gap:8px; align-items:flex-end;}
   button.statusbtn{font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px; border:1px solid var(--line); cursor:pointer; background:var(--slate-soft); color:var(--text-soft); transition:all .15s ease; white-space:nowrap;}
@@ -214,6 +204,21 @@
   tr:last-child td{border-bottom:none;}
   .slot-note{font-size:12.5px; color:var(--text-soft); margin-bottom:14px; padding:10px 14px; background:var(--card); border:1px solid var(--line); border-radius:9px; line-height:1.5;}
   .empty-note{font-size:13px; color:var(--text-soft); padding:20px; text-align:center;}
+  .audit-step{background:var(--card); border:1px solid var(--line); border-radius:10px; margin:0 0 16px; overflow:hidden;}
+  .audit-step-header{display:flex; align-items:center; gap:14px; padding:16px 18px; background:var(--bg-soft); border-bottom:1px solid var(--line);}
+  .audit-step-number{width:30px; height:30px; flex:none; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:#1B1F2B; font:600 13px 'IBM Plex Mono',monospace;}
+  .audit-step-title{font-size:16px; font-weight:700;}
+  .audit-step-meta{margin-left:auto; color:var(--text-soft); font-size:12px; text-align:right;}
+  .audit-group{padding:14px 18px 4px;}
+  .audit-group + .audit-group{border-top:1px solid var(--line);}
+  .audit-group-header{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; font-size:13px; font-weight:700;}
+  .audit-group-header span:last-child{font-size:11px; color:var(--text-soft); font-weight:500; white-space:nowrap;}
+  .audit-course{display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--line);}
+  .audit-course-name{font-size:13px; font-weight:600;}
+  .audit-course-code{font-size:11px; color:var(--text-soft); margin-top:2px;}
+  .audit-open-btn{border:0; background:none; color:var(--gold); font:600 11px 'IBM Plex Sans',sans-serif; cursor:pointer; padding:5px;}
+  .audit-open-btn:hover{text-decoration:underline;}
+  .audit-status-btn{font-size:11px !important; padding:5px 9px !important;}
 
   .plan-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media (max-width:800px){ .plan-grid{grid-template-columns:1fr;} }
@@ -247,6 +252,13 @@
     h1{font-size:27px;}
     .rail{padding-left:28px;}
     .node .dot{left:-28px; width:20px; height:20px; font-size:9px;}
+    .toolbar .filter-control{flex:1; min-width:145px;}
+    .toolbar select.picker.filter-select{width:100%; min-width:0;}
+    .audit-step-header{align-items:flex-start;}
+    .audit-step-meta{max-width:90px;}
+    .audit-course{grid-template-columns:minmax(0,1fr) auto; gap:6px;}
+    .audit-course .audit-open-btn{grid-column:2; grid-row:1;}
+    .audit-course .statusbtn{grid-column:1 / -1; justify-self:start;}
   }
   @media (prefers-reduced-motion: reduce){ * { transition:none !important; animation:none !important; } }
 </style>
@@ -258,7 +270,7 @@
     <div>
       <div class="eyebrow">B.Sc. Computer Science · University of the People</div>
       <h1>Learning Pathway</h1>
-      <div class="subtitle">Your 40-course sequence, Sophia Learning mapping, and elective choices — customized for your journey.</div>
+      <div class="subtitle">A 120-credit degree audit, organized by official requirement and course status.</div>
     </div>
     <div class="headerRight">
       <div class="syncbadge ok" id="syncBadge">Synced</div>
@@ -282,7 +294,7 @@
   <div class="progress-caption">
     <div class="progress-legend">
       <span><span class="dot done"></span><span id="progressLabel">0 done</span></span>
-      <span><span class="dot learning"></span><span id="learningLabel">0 in progress</span></span>
+      <span><span class="dot learning"></span><span id="learningLabel">0 currently learning</span></span>
       <span id="jumpToNextWrap" style="display:none;"><a href="#" id="jumpToNextLink" style="color:var(--gold); font-weight:600; text-decoration:none;">Jump to next &rarr;</a></span>
     </div>
     <span id="progressPct">0%</span>
@@ -307,6 +319,7 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="pathway">Pathway</div>
+    <div class="tab" data-tab="degree-audit">Degree Audit</div>
     <div class="tab" data-tab="courses">Courses</div>
     <div class="tab" data-tab="electives">Elective Menus</div>
     <div class="tab" data-tab="planning">Planning</div>
@@ -315,11 +328,14 @@
   <div id="tab-courses" style="display:none;">
     <div class="toolbar" style="margin-bottom:6px;">
       <div style="flex:1; font-weight:700; font-size:18px;">Course overview</div>
-      <div style="color:var(--text-soft); font-size:13px;">Official UoPeople breakdown: Major 20 · Electives 10 · General Education 10</div>
+      <div style="color:var(--text-soft); font-size:13px;">Official audit: 60 major credits · 30 General Education · 30 electives</div>
     </div>
     <div class="overview-cards" id="coursesOverview"></div>
     <div class="toolbar" style="margin-top:16px;">
       <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="coursesSearchInput" placeholder="Search within this category..."></div>
+      <label class="filter-control">Progress<select id="coursesProgressFilter" class="picker filter-select">
+        <option value="all">All progress</option><option value="to-learn">To learn</option><option value="learning">Currently learning</option><option value="done">Finished</option>
+      </select></label>
       <div class="menu-tabs" id="courseCategoryTabs"></div>
     </div>
     <div id="coursesList"></div>
@@ -355,22 +371,33 @@
       </div>
     </div>
     <div class="toolbar">
-      <div class="filters" id="majorMinorFilterChips"></div>
-      <div style="display:flex; gap:8px; margin-left:auto;">
-        <button class="iconbtn" id="bulkMinorTransferableBtn" title="Set every Gen Ed / General Elective course to Transferable">Mark all Minor &rarr; Transferable</button>
-        <button class="iconbtn" id="bulkMajorNotTransferableBtn" title="Set every Major Required / Major Elective (CS) course to Not transferable">Mark all Major &rarr; Not transferable</button>
-      </div>
-    </div>
-    <div class="toolbar">
       <div class="searchbox"><span class="icon">&#128269;</span><input type="text" id="searchInput" placeholder="Search course name or code..."></div>
-      <div class="filters" id="filterChips"></div>
+      <label class="filter-control">Category<select id="pathwayCategoryFilter" class="picker filter-select">
+        <option value="all">All categories</option><option value="Major Required">Major Required</option><option value="Major Elective">Major Elective</option><option value="Gen Ed">General Education</option><option value="General Elective">General Elective</option>
+      </select></label>
+      <label class="filter-control">Progress<select id="pathwayProgressFilter" class="picker filter-select">
+        <option value="all">All progress</option><option value="to-learn">To learn</option><option value="learning">Currently learning</option><option value="done">Finished</option>
+      </select></label>
     </div>
-    <div class="toolbar">
-      <div class="filters" id="transferFilterChips"></div>
-      <label class="togglewrap"><input type="checkbox" id="hideDoneToggle"> Hide completed</label>
+    <div class="toolbar" style="align-items:center;">
+      <label class="filter-control">Transfer<select id="pathwayTransferFilter" class="picker filter-select">
+        <option value="all">All transfer decisions</option><option value="undecided">Undecided</option><option value="transferable">Transferable</option><option value="plan">Plan to transfer</option><option value="not-transferable">Not transferable</option>
+      </select></label>
       <label class="togglewrap"><input type="checkbox" id="proctoredOnlyToggle"> Proctored only</label>
+      <details class="bulk-actions"><summary>Bulk transfer actions</summary><div class="bulk-menu">
+        <button class="iconbtn" id="bulkMinorTransferableBtn" title="Set General Education and General Elective courses to Transferable">Mark non-major courses transferable</button>
+        <button class="iconbtn" id="bulkMajorNotTransferableBtn" title="Set Major Required and Major Elective courses to Not transferable">Mark major courses not transferable</button>
+      </div></details>
     </div>
     <div class="rail" id="pathwayRail"></div>
+  </div>
+
+  <div id="tab-degree-audit" style="display:none;">
+    <div class="toolbar" style="margin-bottom:16px;">
+      <div style="flex:1; font-weight:700; font-size:18px;">Official course pathway</div>
+      <div style="color:var(--text-soft); font-size:13px;">120 credits · 40 course slots · follow the degree audit requirements</div>
+    </div>
+    <div id="degreeAuditContent"></div>
   </div>
 
   <div id="tab-electives" style="display:none;">
@@ -425,7 +452,6 @@
         <div class="inputrow"><label>UoPeople fee per direct course (USD)</label><input type="number" id="in_uopFee" value="180" min="0" step="10"></div>
         <div class="inputrow"><label>Sophia subscription cost / month (USD)</label><input type="number" id="in_sophiaCost" value="99" min="0" step="10"></div>
         <div class="inputrow"><label>Scholarship covers per-course fee?</label><input type="checkbox" id="in_scholarship" checked></div>
-        <div class="slot-note" id="cgpaLoadNote" style="margin-top:10px;"></div>
       </div>
       <div class="panel">
         <h3>What your current choices mean</h3>
@@ -534,8 +560,16 @@ const ELECTIVE_MENUS = {
       {name:"Introduction to Philosophy", code:"PHIL 1402", prereq:"None", sophia:"Ancient Greek Philosophers"},
       {name:"World Literature", code:"ENGL 1405", prereq:"None", sophia:""},
     ]},
-  civilization: { label: "Civilization Studies, Culture & Belief", note: "One slot (position 19). Only one course exists officially.",
-    options: [ {name:"Greek and Roman Civilization", code:"HIST 1421", prereq:"None", sophia:"Approaches to Studying Religions"} ]},
+  civilization: { label: "Civilization Studies, Culture & Belief", note: "One slot (position 19). Choose one of the official courses.",
+    options: [
+      {name:"Greek and Roman Civilization", code:"HIST 1421", prereq:"None", sophia:"Approaches to Studying Religions"},
+      {name:"Early World History", code:"HIST 1301", prereq:"None", sophia:""}
+    ]},
+  onlinelearning: { label: "Online Learning", note: "One slot (position 1). Complete at least 3 credits in this section.",
+    options: [
+      {name:"Online Education Strategies", code:"UNIV 1001", prereq:"None", sophia:"Take at UoPeople (Mandatory Residency)"},
+      {name:"Online Education Strategies for Non-Native English Speakers", code:"UNIV 1002", prereq:"None", sophia:""}
+    ]},
   majorelective: { label: "Major Elective (Computer Science)", note: "Nine slots (24, 31–33, 35–38, 40). Official CS catalog electives.",
     options: [
       {name:"Analysis of Algorithms", code:"CS 3304", prereq:"CS 3303", sophia:""},
@@ -696,7 +730,7 @@ function addQualifiedGeneralElectiveOption(opt){
 ELECTIVE_MENUS.generalelective.options = QUALIFIED_GENERAL_ELECTIVE_OPTIONS;
 
 const PATHWAY = [
-  {o:1, type:"fixed", name:"Online Education Strategies", code:"UNIV 1001", prereq:"None", cat:"Gen Ed", sophia:"Take at UoPeople (Mandatory Residency)"},
+  {o:1, type:"choice", menu:"onlinelearning", cat:"Gen Ed", label:"Online Learning"},
   {o:2, type:"fixed", name:"Introduction to Computer Science", code:"CS 1111", prereq:"None", cat:"Major Required", sophia:"Introduction to Information Technology"},
   {o:3, type:"fixed", name:"English Composition 2", code:"ENGL 1102", prereq:"None", cat:"Gen Ed", sophia:"English Composition I"},
   {o:4, type:"fixed", name:"Programming Fundamentals", code:"CS 1101", prereq:"None", cat:"Major Required", sophia:"Introduction to Python Programming"},
@@ -782,7 +816,7 @@ function getDefaultState(){
       31: "plan", 32: "plan", 33: "plan", 34: "not-transferable", 35: "plan",
       36: "plan", 37: "plan", 38: "plan", 39: "not-transferable", 40: "plan"
     },
-    choice: { 5: 4, 9: 0, 14: 1, 17: 0, 19: 0, 21: 1, 23: 5, 25: 0 },
+    choice: { 1: 0, 5: 4, 9: 0, 14: 1, 17: 0, 19: 0, 21: 1, 23: 5, 25: 0 },
     sophiaOverride: {
       1: "Take at UoPeople (Mandatory Residency)",
       2: "Introduction to Information Technology",
@@ -828,9 +862,6 @@ function getDefaultState(){
     electiveMenus: null,
     freeText: {},
     notes: {},
-    sophiaProgress: {},
-    grade: {},
-    weeklyTasks: {},
     theme: "dark",
     // Default sequence = UoPeople's published "example" pathway numbering (1-40).
     // In real registration this is a starting point, not a fixed queue — see the
@@ -867,7 +898,7 @@ function getPlanningDefaults(){
 function mergeStateWithDefaults(stateData, defaultsData){
   const defaults = cloneState(defaultsData || getDefaultState());
   const state = cloneState(stateData || {});
-  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "sophiaProgress", "grade", "weeklyTasks", "planning"];
+  const nestedKeys = ["progress", "transferDecision", "choice", "sophiaOverride", "freeText", "notes", "planning"];
   nestedKeys.forEach(key=>{
     if(state[key] !== undefined){
       defaults[key] = deepMerge(defaults[key] || {}, state[key] || {});
@@ -983,12 +1014,20 @@ function ensureStateShape(){
   STATE.sophiaOverride = STATE.sophiaOverride || {};
   STATE.freeText = STATE.freeText || {};
   STATE.notes = STATE.notes || {};
-  STATE.sophiaProgress = STATE.sophiaProgress || {};
-  STATE.grade = STATE.grade || {};
-  STATE.weeklyTasks = STATE.weeklyTasks || {};
+  delete STATE.sophiaProgress;
+  delete STATE.grade;
+  delete STATE.weeklyTasks;
   STATE.theme = STATE.theme || "dark";
   STATE.planning = { ...getPlanningDefaults(), ...(STATE.planning || {}) };
   STATE.electiveMenus = STATE.electiveMenus || getDefaultElectiveMenus();
+  const defaultMenus = getDefaultElectiveMenus();
+  if(!STATE.electiveMenus.onlinelearning){
+    STATE.electiveMenus.onlinelearning = cloneState(defaultMenus.onlinelearning);
+  }
+  const civilizationOptions = STATE.electiveMenus.civilization && STATE.electiveMenus.civilization.options;
+  if(Array.isArray(civilizationOptions) && !civilizationOptions.some(option=>option.code === "HIST 1301")){
+    civilizationOptions.push(cloneState(defaultMenus.civilization.options.find(option=>option.code === "HIST 1301")));
+  }
 
   // pathwayOrder: the user's actual/preferred display sequence. Repair rather than
   // reset outright, so a stray save doesn't wipe someone's custom ordering — drop
@@ -1163,27 +1202,14 @@ function resolveCourse(entry){
 }
 
 const PROGRESS_CYCLE = ["to-learn","learning","done"];
-const PROGRESS_LABEL = {"to-learn":"To learn","learning":"Learning","done":"Done"};
+const PROGRESS_LABEL = {"to-learn":"To learn","learning":"Currently learning","done":"Finished"};
 const TRANSFER_CYCLE = ["undecided","transferable","plan","not-transferable"];
 const TRANSFER_LABEL = {"undecided":"Undecided","transferable":"Transferable","plan":"Plan to transfer","not-transferable":"Not transferable"};
-const SOPHIA_PROGRESS_CYCLE = ["not-started","studying","completed","submitted","approved"];
-const SOPHIA_PROGRESS_LABEL = {"not-started":"Not started","studying":"Studying","completed":"Completed","submitted":"Submitted to UoPeople","approved":"Approved"};
-const GRADE_OPTIONS = ["","A","A-","B+","B","B-","C+","C","C-","D+","D","F"];
-const GRADE_POINTS = {"A":4.0,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
-const WEEKLY_TASK_ITEMS = [
-  {key:"reading", label:"Reading & lecture notes"},
-  {key:"discussionPost", label:"Discussion forum post"},
-  {key:"peerReply1", label:"Peer reply #1"},
-  {key:"peerReply2", label:"Peer reply #2"},
-  {key:"quiz", label:"Quiz / self-quiz"},
-  {key:"writtenAssignment", label:"Written assignment (if due this week)"},
-];
 
 let activeFilter = "all";
 let activeTransferFilter = "all";
-let activeMajorMinorFilter = "all";
+let activeProgressFilter = "all";
 let searchTerm = "";
-let hideDone = false;
 let proctoredOnly = false;
 
 // "Major" = the Computer Science courses that make up your CS major (Major Required +
@@ -1252,22 +1278,6 @@ function getDuplicateChoiceOrders(){
     }
   });
   return dupes;
-}
-
-function computeGPA(){
-  // Only courses actually taken directly at UoPeople carry a UoPeople grade — Sophia-transferred
-  // credits don't get a letter grade or count toward CGPA there.
-  let totalPoints = 0;
-  let totalCourses = 0;
-  PATHWAY.forEach(entry=>{
-    const grade = STATE.grade[entry.o];
-    const transferDecision = STATE.transferDecision[entry.o] || "undecided";
-    if(!grade || GRADE_POINTS[grade] === undefined) return;
-    if(transferDecision === "transferable") return;
-    totalPoints += GRADE_POINTS[grade];
-    totalCourses++;
-  });
-  return totalCourses > 0 ? (totalPoints / totalCourses) : null;
 }
 
 function renderSinglePaceBar(prefix, label, actualDone, actualTotal, expectedFraction, elapsedMonths){
@@ -1344,10 +1354,8 @@ function renderPaceComparison(){
     const t = STATE.transferDecision[entry.o] || "undecided";
     if(t === "transferable" || t === "plan"){
       sophiaTotal++;
-      const sp = STATE.sophiaProgress[entry.o] || "not-started";
-      const sophiaSubDone = (sp === "completed" || sp === "submitted" || sp === "approved");
       const overallDone = (STATE.progress[entry.o] || "to-learn") === "done";
-      if(sophiaSubDone || overallDone) sophiaDone++;
+      if(overallDone) sophiaDone++;
     } else {
       uopTotal++;
       if((STATE.progress[entry.o] || "to-learn") === "done") uopDone++;
@@ -1383,33 +1391,23 @@ function renderPaceComparison(){
 
 
 function renderStats(){
-  let done=0, learning=0, transferable=0, plan=0, notTransferable=0;
+  let done=0, learning=0, toLearn=0;
   PATHWAY.forEach(entry=>{
-    const t = STATE.transferDecision[entry.o] || "undecided";
-    const p = STATE.progress[entry.o] || "to-learn";
-    if(p==="done") done++;
-    if(p==="learning") learning++;
-    if(t==="transferable") transferable++;
-    if(t==="plan") plan++;
-    if(t==="not-transferable") notTransferable++;
+    const progress = STATE.progress[entry.o] || "to-learn";
+    if(progress === "done") done++;
+    else if(progress === "learning") learning++;
+    else toLearn++;
   });
   const total = PATHWAY.length;
   const donePct = Math.round((done/total)*100);
   const learningPct = Math.round((learning/total)*100);
-  const gpa = computeGPA();
   const creditsDone = done * 3;
   const creditsTotal = total * 3;
-  const estHoursLow = learning * 8;
-  const estHoursHigh = learning * 20;
   document.getElementById("statsRail").innerHTML = `
-    <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Courses done</div></div>
+    <div class="stat"><div class="num">${done}/${total}</div><div class="lbl">Finished</div></div>
     <div class="stat"><div class="num">${creditsDone}/${creditsTotal}</div><div class="lbl">Credits earned</div></div>
-    <div class="stat"><div class="num">${learning}</div><div class="lbl">In progress</div></div>
-    <div class="stat"><div class="num">${learning>0 ? estHoursLow+"–"+estHoursHigh : "0"}</div><div class="lbl">Est. hrs/week right now</div></div>
-    <div class="stat"><div class="num">${transferable}</div><div class="lbl">Marked transferable</div></div>
-    <div class="stat"><div class="num">${plan}</div><div class="lbl">Plan to transfer</div></div>
-    <div class="stat"><div class="num">${notTransferable}</div><div class="lbl">Marked not transferable</div></div>
-    <div class="stat"><div class="num">${gpa===null ? "—" : gpa.toFixed(2)}</div><div class="lbl">CGPA (UoPeople courses)</div></div>
+    <div class="stat"><div class="num">${learning}</div><div class="lbl">Currently learning</div></div>
+    <div class="stat"><div class="num">${toLearn}</div><div class="lbl">To learn</div></div>
   `;
 
   const cats = ["major","elective","gened"];
@@ -1423,7 +1421,7 @@ function renderStats(){
   document.getElementById("progressFillDone").style.width = donePct+"%";
   document.getElementById("progressFillLearning").style.width = learningPct+"%";
   document.getElementById("progressLabel").textContent = `${done} done`;
-  document.getElementById("learningLabel").textContent = `${learning} in progress`;
+  document.getElementById("learningLabel").textContent = `${learning} currently learning`;
   document.getElementById("progressPct").textContent = donePct+"% of "+total;
 
   const nextOrder = getNextUpOrder();
@@ -1436,18 +1434,18 @@ function renderStats(){
       document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       const pathwayTab = document.querySelector('.tab[data-tab="pathway"]');
       if(pathwayTab) pathwayTab.classList.add("active");
-      ["pathway","electives","planning","courses"].forEach(name=>{
+      ["pathway","degree-audit","electives","planning","courses"].forEach(name=>{
         const el = document.getElementById("tab-"+name);
         if(el) el.style.display = (name==="pathway") ? "block":"none";
       });
       activeFilter = "all";
+      activeProgressFilter = "all";
       activeTransferFilter = "all";
-      hideDone = false;
+      proctoredOnly = false;
       searchTerm = "";
       const searchInputEl = document.getElementById("searchInput");
       if(searchInputEl) searchInputEl.value = "";
-      const hideDoneEl = document.getElementById("hideDoneToggle");
-      if(hideDoneEl) hideDoneEl.checked = false;
+      document.getElementById("proctoredOnlyToggle").checked = false;
       renderFilters();
       renderPathway();
       const target = document.getElementById("node-"+nextOrder);
@@ -1466,45 +1464,13 @@ function renderStats(){
   renderPlanning();
   renderCourseOverview();
   renderCoursesList();
+  renderDegreeAudit();
 }
 
 function renderFilters(){
-  const mmCats = [
-    {key:"all", label:"All (major + minor)"},
-    {key:"major", label:"Major (CS courses)"},
-    {key:"minor", label:"Minor (Gen Ed / General Elective)"},
-  ];
-  const mmEl = document.getElementById("majorMinorFilterChips");
-  mmEl.innerHTML = "";
-  mmCats.forEach(({key,label})=>{
-    const chip = document.createElement("div");
-    chip.className = "chip" + (activeMajorMinorFilter===key ? " active":"");
-    chip.textContent = label;
-    chip.onclick = ()=>{ activeMajorMinorFilter = key; renderPathway(); renderFilters(); };
-    mmEl.appendChild(chip);
-  });
-
-  const cats = ["all","Major Required","Major Elective","General Elective","Gen Ed"];
-  const chipsEl = document.getElementById("filterChips");
-  chipsEl.innerHTML = "";
-  cats.forEach(cat=>{
-    const chip = document.createElement("div");
-    chip.className = "chip" + (activeFilter===cat ? " active":"");
-    chip.textContent = cat==="all" ? "All categories" : cat;
-    chip.onclick = ()=>{ activeFilter = cat; renderPathway(); renderFilters(); };
-    chipsEl.appendChild(chip);
-  });
-
-  const tCats = ["all", ...TRANSFER_CYCLE];
-  const tEl = document.getElementById("transferFilterChips");
-  tEl.innerHTML = "";
-  tCats.forEach(t=>{
-    const chip = document.createElement("div");
-    chip.className = "chip" + (activeTransferFilter===t ? " active":"");
-    chip.textContent = t==="all" ? "All transfer statuses" : TRANSFER_LABEL[t];
-    chip.onclick = ()=>{ activeTransferFilter = t; renderPathway(); renderFilters(); };
-    tEl.appendChild(chip);
-  });
+  document.getElementById("pathwayCategoryFilter").value = activeFilter;
+  document.getElementById("pathwayProgressFilter").value = activeProgressFilter;
+  document.getElementById("pathwayTransferFilter").value = activeTransferFilter;
 }
 
 function matchesSearch(entry, c){
@@ -1574,7 +1540,7 @@ function renderPathway(){
   const nextUpOrder = getNextUpOrder();
   const dupeOrders = getDuplicateChoiceOrders();
   const orderedPathway = getOrderedPathway();
-  const filtersActive = activeFilter!=="all" || activeMajorMinorFilter!=="all" || activeTransferFilter!=="all" || hideDone || proctoredOnly || searchTerm.trim()!=="";
+  const filtersActive = activeFilter!=="all" || activeProgressFilter!=="all" || activeTransferFilter!=="all" || proctoredOnly || searchTerm.trim()!=="";
 
   orderedPathway.forEach((entry, idx)=>{
     const c = resolveCourse(entry);
@@ -1582,9 +1548,8 @@ function renderPathway(){
     const transferDecision = STATE.transferDecision[entry.o] || "undecided";
 
     if(activeFilter!=="all" && c.cat!==activeFilter) return;
-    if(activeMajorMinorFilter!=="all" && majorMinorOf(c.cat)!==activeMajorMinorFilter) return;
+    if(activeProgressFilter!=="all" && progress!==activeProgressFilter) return;
     if(activeTransferFilter!=="all" && transferDecision!==activeTransferFilter) return;
-    if(hideDone && progress==="done") return;
     if(proctoredOnly && !entry.proctored) return;
     if(!matchesSearch(entry, c)) return;
     anyVisible = true;
@@ -1717,76 +1682,6 @@ function renderPathway(){
     sophiaRow.appendChild(sophiaInput);
     sophiaRow.appendChild(sophiaTierBadge);
     left.appendChild(sophiaRow);
-
-    /* Sophia completion sub-tracker — only meaningful for courses you're actually routing through Sophia */
-    if(transferDecision === "transferable" || transferDecision === "plan"){
-      const sp = STATE.sophiaProgress[entry.o] || "not-started";
-      const spBtn = document.createElement("button");
-      spBtn.className = "sophiaprogressbtn " + sp;
-      spBtn.title = "Click to advance your Sophia completion status";
-      spBtn.textContent = "Sophia: " + SOPHIA_PROGRESS_LABEL[sp];
-      spBtn.style.marginTop = "8px";
-      spBtn.onclick = ()=>{
-        const idx = SOPHIA_PROGRESS_CYCLE.indexOf(sp);
-        STATE.sophiaProgress[entry.o] = SOPHIA_PROGRESS_CYCLE[(idx+1)%SOPHIA_PROGRESS_CYCLE.length];
-        queueSave(); renderPathway();
-      };
-      left.appendChild(spBtn);
-    }
-
-    /* Grade + running GPA — only relevant once a course is actually Done, and only counted toward
-       GPA if it isn't marked "transferable" (Sophia-transferred credits don't carry a UoPeople grade). */
-    if(progress === "done"){
-      const gradeRow = document.createElement("div");
-      gradeRow.className = "grade-row";
-      const gradeSelect = document.createElement("select");
-      gradeSelect.className = "grade-select";
-      GRADE_OPTIONS.forEach(g=>{
-        const o = document.createElement("option");
-        o.value = g;
-        o.textContent = g === "" ? "Grade (optional)" : g;
-        o.selected = (STATE.grade[entry.o] || "") === g;
-        gradeSelect.appendChild(o);
-      });
-      gradeSelect.onchange = (e)=>{ STATE.grade[entry.o] = e.target.value; queueSave(); renderStats(); };
-      gradeRow.appendChild(gradeSelect);
-      if(transferDecision === "transferable"){
-        const hint = document.createElement("span");
-        hint.style = "font-size:11px; color:var(--text-soft);";
-        hint.textContent = "Won't count toward CGPA (Sophia transfer)";
-        gradeRow.appendChild(hint);
-      }
-      left.appendChild(gradeRow);
-    }
-
-    /* Weekly task checklist — mirrors UoPeople's standard weekly rhythm (reading, discussion post,
-       peer replies, quiz). Only shown while a course is actively "Learning"; reset it yourself
-       each new week since the tool has no calendar-week concept of its own. */
-    if(progress === "learning"){
-      const tasks = STATE.weeklyTasks[entry.o] || {};
-      const checklistWrap = document.createElement("div");
-      checklistWrap.className = "weekly-checklist";
-      checklistWrap.innerHTML = `<div class="wc-title">This week's tasks</div>`;
-      WEEKLY_TASK_ITEMS.forEach(item=>{
-        const row = document.createElement("label");
-        row.className = "wc-row";
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.checked = !!tasks[item.key];
-        cb.onchange = (e)=>{
-          const t = STATE.weeklyTasks[entry.o] || {};
-          t[item.key] = e.target.checked;
-          STATE.weeklyTasks[entry.o] = t;
-          queueSave();
-        };
-        row.appendChild(cb);
-        const span = document.createElement("span");
-        span.textContent = item.label;
-        row.appendChild(span);
-        checklistWrap.appendChild(row);
-      });
-      left.appendChild(checklistWrap);
-    }
 
     if(entry.note){
       const noteEl = document.createElement("div");
@@ -2039,8 +1934,34 @@ PATHWAY.forEach(entry=>{
 });
 const OFFICIAL_LABEL = { major: 'Major Required', elective: 'Electives', gened: 'General Education' };
 const OFFICIAL_TOTAL = { major: 20, elective: 10, gened: 10 };
+const DEGREE_AUDIT_STEPS = [
+  {
+    title: 'Major Required', credits: 60,
+    groups: [{ title: 'Major Required Courses', credits: 60, orders: PATHWAY.filter(entry=>OFFICIAL_CATEGORY[entry.o]==='major').map(entry=>entry.o) }]
+  },
+  {
+    title: 'General Education', credits: 30,
+    groups: [
+      { title: 'Civilization Studies, Culture, and Belief', credits: 3, orders: [19] },
+      { title: 'Humanities', credits: 6, orders: [17,21] },
+      { title: 'Social and Behavior Science', credits: 6, orders: [5,23] },
+      { title: 'Natural Science and Technology', credits: 3, orders: [14] },
+      { title: 'Communication', credits: 6, orders: [3,16] },
+      { title: 'Online Learning', credits: 3, orders: [1] },
+      { title: 'Values and Ethical Reasoning', credits: 3, orders: [9] }
+    ]
+  },
+  {
+    title: 'Electives', credits: 30,
+    groups: [
+      { title: 'Major Electives', credits: 27, orders: [24,31,32,33,35,36,37,38,40] },
+      { title: 'General Electives', credits: 3, orders: [25] }
+    ]
+  }
+];
 let activeCourseCategory = 'major';
 let coursesSearchTerm = '';
+let activeCoursesProgressFilter = 'all';
 
 function renderCourseOverview(){
   const container = document.getElementById('coursesOverview');
@@ -2084,12 +2005,73 @@ function renderCourseCategoryTabs(){
   });
 }
 
+function renderDegreeAudit(){
+  const container = document.getElementById('degreeAuditContent');
+  if(!container) return;
+
+  container.innerHTML = DEGREE_AUDIT_STEPS.map((step, index)=>{
+    const groups = step.groups.map(group=>{
+      const entries = group.orders.map(order=>PATHWAY.find(entry=>entry.o===order)).filter(Boolean);
+      const finished = entries.filter(entry=>(STATE.progress[entry.o]||'to-learn')==='done').length;
+      const courseRows = entries.map(entry=>{
+        const course = resolveCourse(entry);
+        const progress = STATE.progress[entry.o] || 'to-learn';
+        return `<div class="audit-course">
+          <div><div class="audit-course-name">#${entry.o} ${escapeHtml(course.name)}</div><div class="audit-course-code">${escapeHtml(course.code||'')}${entry.label ? ' · '+escapeHtml(entry.label) : ''}</div></div>
+          <button class="audit-open-btn" data-order="${entry.o}">Edit in Pathway</button>
+          <button class="statusbtn ${progress} audit-status-btn" data-order="${entry.o}">${PROGRESS_LABEL[progress]}</button>
+        </div>`;
+      }).join('');
+      return `<div class="audit-group">
+        <div class="audit-group-header"><span>${escapeHtml(group.title)}</span><span>${finished}/${entries.length} finished · ${group.credits} credits</span></div>
+        ${courseRows}
+      </div>`;
+    }).join('');
+    const entries = step.groups.flatMap(group=>group.orders.map(order=>PATHWAY.find(entry=>entry.o===order)).filter(Boolean));
+    const finished = entries.filter(entry=>(STATE.progress[entry.o]||'to-learn')==='done').length;
+    return `<section class="audit-step">
+      <div class="audit-step-header"><div class="audit-step-number">${index+1}</div><div class="audit-step-title">${escapeHtml(step.title)}</div><div class="audit-step-meta">${finished}/${entries.length} finished<br>${step.credits} credits</div></div>
+      ${groups}
+    </section>`;
+  }).join('');
+
+  container.querySelectorAll('.audit-status-btn').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      const order = Number(button.dataset.order);
+      const progress = STATE.progress[order] || 'to-learn';
+      const index = PROGRESS_CYCLE.indexOf(progress);
+      STATE.progress[order] = PROGRESS_CYCLE[(index+1)%PROGRESS_CYCLE.length];
+      queueSave();
+      renderDegreeAudit();
+      renderPathway();
+      renderStats();
+    });
+  });
+  container.querySelectorAll('.audit-open-btn').forEach(button=>{
+    button.addEventListener('click', ()=>{
+      activeFilter = 'all';
+      activeProgressFilter = 'all';
+      activeTransferFilter = 'all';
+      searchTerm = '';
+      proctoredOnly = false;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('proctoredOnlyToggle').checked = false;
+      renderFilters();
+      document.querySelector('.tab[data-tab="pathway"]').click();
+      const target = document.getElementById('node-'+button.dataset.order);
+      if(target) target.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+  });
+}
+
 function renderCoursesList(){
   const container = document.getElementById('coursesList');
   if(!container) return;
   const term = (coursesSearchTerm||'').toLowerCase();
   const dupeOrders = getDuplicateChoiceOrders();
   const rows = PATHWAY.filter(e=>OFFICIAL_CATEGORY[e.o]===activeCourseCategory).filter(entry=>{
+    const progress = STATE.progress[entry.o] || 'to-learn';
+    if(activeCoursesProgressFilter !== 'all' && progress !== activeCoursesProgressFilter) return false;
     if(!term) return true;
     const c = resolveCourse(entry);
     const hay = `${c.name} ${c.code} ${entry.label||''}`.toLowerCase();
@@ -2120,17 +2102,6 @@ function renderCoursesList(){
       }
     }
 
-    const sophiaSubHtml = (transferDecision === "transferable" || transferDecision === "plan") ? (()=>{
-      const sp = STATE.sophiaProgress[entry.o] || "not-started";
-      return `<button data-order="${entry.o}" class="sophiaprogressbtn ${sp} table-sophiaprogress-btn" style="margin-top:8px;">Sophia: ${SOPHIA_PROGRESS_LABEL[sp]}</button>`;
-    })() : "";
-
-    const gradeHtml = progress === "done" ? (()=>{
-      const opts = GRADE_OPTIONS.map(g=>`<option value="${g}" ${((STATE.grade[entry.o]||"")===g)?"selected":""}>${g===""?"Grade (optional)":g}</option>`).join('');
-      const hint = transferDecision === "transferable" ? `<span style="font-size:11px; color:var(--text-soft);">Won't count toward CGPA (Sophia transfer)</span>` : "";
-      return `<div class="grade-row"><select data-order="${entry.o}" class="grade-select table-grade-select">${opts}</select>${hint}</div>`;
-    })() : "";
-
     return `<div class="card" style="margin-bottom:12px; align-items:flex-start;">
       <div style="flex:1; min-width:220px;">
         <div style="font-weight:700">#${entry.o} ${escapeHtml(entry.label||'')}</div>
@@ -2140,8 +2111,6 @@ function renderCoursesList(){
         ${dupeHtml}
         ${prereqWarnHtml}
         <div class="sophia-row" style="margin-top:8px"><span class="tag">SOPHIA</span><input data-order="${entry.o}" class="table-sophia-input" value="${escapeHtml(sVal)}"></div>
-        ${sophiaSubHtml}
-        ${gradeHtml}
         <div style="margin-top:8px"><textarea data-order="${entry.o}" class="notes" placeholder="Personal notes...">${escapeHtml(STATE.notes[entry.o]||'')}</textarea></div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
@@ -2163,21 +2132,6 @@ function renderCoursesList(){
   });
   container.querySelectorAll('.table-sophia-input').forEach(inp=>{
     inp.addEventListener('input',(e)=>{ STATE.sophiaOverride[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
-  });
-  container.querySelectorAll('.table-sophiaprogress-btn').forEach(btn=>{
-    btn.addEventListener('click',(e)=>{
-      const ord = Number(e.target.dataset.order);
-      const sp = STATE.sophiaProgress[ord] || "not-started";
-      const idx = SOPHIA_PROGRESS_CYCLE.indexOf(sp);
-      STATE.sophiaProgress[ord] = SOPHIA_PROGRESS_CYCLE[(idx+1)%SOPHIA_PROGRESS_CYCLE.length];
-      queueSave(); renderCoursesList(); renderStats();
-    });
-  });
-  container.querySelectorAll('.table-grade-select').forEach(sel=>{
-    sel.addEventListener('change',(e)=>{
-      STATE.grade[Number(e.target.dataset.order)] = e.target.value;
-      queueSave(); renderStats();
-    });
   });
   container.querySelectorAll('.notes').forEach(txt=>{
     txt.addEventListener('input',(e)=>{ STATE.notes[Number(e.target.dataset.order)] = e.target.value; queueSave(); });
@@ -2209,6 +2163,10 @@ const coursesSearchEl = document.getElementById('coursesSearchInput');
 if(coursesSearchEl){
   coursesSearchEl.addEventListener('input', (e)=>{ coursesSearchTerm = e.target.value; renderCoursesList(); });
 }
+document.getElementById('coursesProgressFilter').addEventListener('change', (e)=>{
+  activeCoursesProgressFilter = e.target.value;
+  renderCoursesList();
+});
 
 
 function renderElectiveManager(){
@@ -2384,29 +2342,6 @@ function renderPlanning(){
   document.getElementById("out_totalCost").textContent = "$" + Math.round(totalCost).toLocaleString();
   document.getElementById("out_totalTime").textContent = totalMonths.toFixed(1) + " months (~" + (totalMonths/12).toFixed(1) + " years)";
 
-  const cgpaNote = document.getElementById("cgpaLoadNote");
-  if(cgpaNote){
-    const gpa = computeGPA();
-    let maxCourses, ruleText;
-    if(gpa === null){
-      maxCourses = 2;
-      ruleText = "No graded courses yet — UoPeople's standard load is 2 courses/term until you have a CGPA on record.";
-    } else if(gpa >= 3.00){
-      maxCourses = 4;
-      ruleText = `Your CGPA (${gpa.toFixed(2)}) is ≥ 3.00 — UoPeople policy allows up to 4 courses/term.`;
-    } else if(gpa >= 2.00){
-      maxCourses = 2;
-      ruleText = `Your CGPA (${gpa.toFixed(2)}) is standard — UoPeople policy allows up to 2 courses/term (4 requires ≥3.00).`;
-    } else {
-      maxCourses = 1;
-      ruleText = `Your CGPA (${gpa.toFixed(2)}) is below 2.00 — per UoPeople policy (academic warning/probation range), you're limited to 1 course/term until it recovers.`;
-    }
-    cgpaNote.textContent = ruleText;
-    if(p.uopPace > maxCourses){
-      cgpaNote.innerHTML = ruleText + ` <b style="color:var(--danger);">Your "UoPeople courses/term" input above (${p.uopPace}) exceeds this — the term schedule below may not be registrable as planned.</b>`;
-    }
-  }
-
   renderTermSchedule(p);
   renderPaceComparison();
 }
@@ -2512,11 +2447,12 @@ document.querySelectorAll(".tab").forEach(tab=>{
   tab.onclick = ()=>{
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
     tab.classList.add("active");
-    ["pathway","electives","planning","courses"].forEach(name=>{
+    ["pathway","degree-audit","electives","planning","courses"].forEach(name=>{
       const el = document.getElementById("tab-"+name);
       if(el) el.style.display = (name===tab.dataset.tab) ? "block":"none";
     });
     if(tab.dataset.tab === "pathway") renderPathway();
+    if(tab.dataset.tab === "degree-audit") renderDegreeAudit();
     if(tab.dataset.tab === "planning") renderPlanning();
     if(tab.dataset.tab === "electives") renderMenuContent();
     if(tab.dataset.tab === "courses"){ renderCourseOverview(); renderCourseCategoryTabs(); renderCoursesList(); }
@@ -2524,6 +2460,9 @@ document.querySelectorAll(".tab").forEach(tab=>{
 });
 
 document.getElementById("searchInput").addEventListener("input", (e)=>{ searchTerm = e.target.value; renderPathway(); });
+document.getElementById("pathwayCategoryFilter").addEventListener("change", (e)=>{ activeFilter = e.target.value; renderPathway(); });
+document.getElementById("pathwayProgressFilter").addEventListener("change", (e)=>{ activeProgressFilter = e.target.value; renderPathway(); });
+document.getElementById("pathwayTransferFilter").addEventListener("change", (e)=>{ activeTransferFilter = e.target.value; renderPathway(); });
 document.getElementById("resetOrderBtn").addEventListener("click", resetPathwayOrder);
 document.getElementById("bulkMinorTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("minor","transferable"));
 document.getElementById("bulkMajorNotTransferableBtn").addEventListener("click", ()=>bulkSetTransferByBucket("major","not-transferable"));
@@ -2537,7 +2476,6 @@ function toggleSuggestedTransferPanel(){
 document.getElementById("suggestedTransferToggle").addEventListener("click", toggleSuggestedTransferPanel);
 document.getElementById("suggestedTransferToggleBtn").addEventListener("click", (e)=>{ e.stopPropagation(); toggleSuggestedTransferPanel(); });
 document.getElementById("electiveSearchInput").addEventListener("input", (e)=>{ electiveSearchTerm = e.target.value; renderMenuContent(); });
-document.getElementById("hideDoneToggle").addEventListener("change", (e)=>{ hideDone = e.target.checked; renderPathway(); });
 document.getElementById("proctoredOnlyToggle").addEventListener("change", (e)=>{ proctoredOnly = e.target.checked; renderPathway(); });
 
 document.getElementById("manageMenuSelect").addEventListener("change", ()=>{ renderElectiveManager(); });
@@ -2608,6 +2546,7 @@ function renderAll(){
   renderStats();
   renderFilters();
   renderPathway();
+  renderDegreeAudit();
   renderMenuTabs();
   renderMenuContent();
   renderElectiveManager();
